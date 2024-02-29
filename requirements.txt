@@ -1,0 +1,8 @@
+numpy
+torch
+ampligraph
+pandas
+rdflib
+networkx
+jupyter
+tensorflow
