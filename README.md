@@ -1,5 +1,7 @@
+
 # Master Thesis on Enrichment of DCAT-AP Metadata using Knowledge Graphs
 This repository contains the code and the data used for the experiments in the master thesis on Knowledge Graph Completion. 
+
 
 ## Research Questions
 The research questions addressed in this thesis are:
