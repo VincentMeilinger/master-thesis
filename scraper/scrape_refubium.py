@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from notebooks.scraper.logger import get_logger
+from scraper.logger import get_logger
 import os
 
 logger = get_logger("RefubiumScraper")
