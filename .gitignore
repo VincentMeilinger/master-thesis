@@ -2,6 +2,8 @@
 **/data
 **/data/*
 data
+variables.env
+**/variables.env
 
 # MacOS system files
 .DS_Store

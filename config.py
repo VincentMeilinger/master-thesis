@@ -1,7 +1,13 @@
 import logging
 import os
 
+# Environment variables
+db_user = os.getenv('DB_USER', 'neo4j')
+db_password = os.getenv('DB_PASSWORD', 'password')
+db_url = os.getenv('DB_URL', 'bolt://localhost:7687')
 
+
+# Logging
 def get_logger(
     name,
     file_path='logs/program.log',
