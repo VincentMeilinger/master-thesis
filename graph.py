@@ -12,7 +12,7 @@ def nx_to_cytoscape(graph):
     return cy_graph
 
 
-def visualize(graph):
+def visualize_dash(graph):
     logger.info("Visualizing the graph")
     cy_graph = nx_to_cytoscape(graph)
     app = Dash(__name__)
@@ -22,7 +22,7 @@ def visualize(graph):
         cyto.Cytoscape(
             id='cytoscape',
             layout={'name': 'cose'},
-            style={'width': '100%', 'height': '400px'},
+            style={'width': '100%', 'height': '100%'},
             elements=cy_graph['elements'],
         )
     ])
