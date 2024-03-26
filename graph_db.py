@@ -5,12 +5,68 @@ import config
 class GraphDB:
 
     def __init__(self):
-        self.driver = GraphDatabase.driver(config.db_url, auth=(config.db_user, config.db_password))
+        self.logger = config.get_logger("GraphDB")
+        self.logger.info("Connecting to the database")
+        self.logger.debug(f"URI: {config.db_uri}")
+        self.logger.debug(f"User: {config.db_user}")
+        self.driver = GraphDatabase.driver(config.db_uri, auth=(config.db_user, config.db_password))
 
     def close(self):
+        self.logger.info("Closing the database connection")
         self.driver.close()
 
+    def create_node_with_dict(self, label, properties):
+        with self.driver.session() as session:
+            # Define the Cypher query
+            cypher_query = f"CREATE (n:{label} $props) RETURN n"
+
+            # Execute the query
+            session.run(cypher_query, props=properties)
+
+    def merge_paper(self, properties):
+        with self.driver.session() as session:
+            # Construct the query dynamically based on the label and properties
+            cypher_query = """
+            MERGE (n:Paper {id: $id})
+            ON CREATE SET n += $properties
+            ON MATCH SET n += $properties
+            RETURN n
+            """
+
+            result = session.run(cypher_query, id=properties['id'], properties=properties)
+
+            if result.single() is None:
+                self.logger.error(f"Failed to create paper {properties['id']}")
+
+    def merge_author(self, properties):
+        with self.driver.session() as session:
+            # Construct the query dynamically based on the label and properties
+            cypher_query = """
+            MERGE (n:Author {name: $name, org: $org})
+            ON CREATE SET n += $properties
+            ON MATCH SET n += $properties
+            RETURN n
+            """
+
+            result = session.run(cypher_query, name=properties['name'], org=properties['org'], properties=properties)
+
+            if result.single() is None:
+                self.logger.error(f"Failed to create author {properties['name']}")
+
+    def merge_author_paper_relationship(self, author_name, author_org, paper_id):
+        with self.driver.session() as session:
+            cypher_query = """
+            MATCH (author:Author {name: $name, org: $org}), (paper:Paper {id: $paperId})
+            MERGE (author)-[r:wrote]->(paper)
+            RETURN r
+            """
+            result = session.run(cypher_query, name=author_name, org=author_org, paperId=paper_id)
+
+            if result.single() is None:
+                self.logger.error(f"Failed to create relationship between {author_name} and {paper_id}")
+
     def create_nodes(self, label, properties_list):
+        self.logger.debug(f"Creating nodes with label {label}")
         """
         Create nodes with a given label and list of property dictionaries.
         :param label: The label for the nodes.
@@ -33,6 +89,7 @@ class GraphDB:
         :param relationship: Type of relationship.
         :param pairs: List of tuples, where each tuple contains (source_node_properties, destination_node_properties).
         """
+        self.logger.debug(f"Creating edges from {from_label} to {to_label} with relationship {relationship}")
         with self.driver.session() as session:
             for from_props, to_props in pairs:
                 session.write_transaction(self._create_edge_tx, from_label, to_label, relationship, from_props,
@@ -54,6 +111,7 @@ class GraphDB:
         :param label: The label of the nodes to delete.
         :param properties: Optional dictionary of properties to match for deletion.
         """
+        self.logger.debug(f"Deleting nodes with label {label}")
         with self.driver.session() as session:
             session.write_transaction(self._delete_nodes_tx, label, properties)
 
@@ -70,6 +128,7 @@ class GraphDB:
         :param match_properties: The properties to match nodes on.
         :param update_properties: The new properties to set on matched nodes.
         """
+        self.logger.debug(f"Updating nodes with label {label}")
         with self.driver.session() as session:
             session.write_transaction(self._update_nodes_tx, label, match_properties, update_properties)
 

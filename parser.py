@@ -1,6 +1,7 @@
 import json
 import networkx as nx
 import config
+from graph_db import GraphDB
 
 logger = config.get_logger("Parser")
 
@@ -36,3 +37,29 @@ def paper_author_graph(file_path='data/IND-WhoIsWho/pid_to_info_all.json', inclu
 
     return g
 
+
+def paper_neo4j(dbm: GraphDB, file_path='data/IND-WhoIsWho/pid_to_info_all.json'):
+    logger.info("Parsing papers")
+    logger.debug(f"Loading data from {file_path}")
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+
+    # Iterate over each paper
+    logger.debug("Creating nodes in neo4j graph database")
+    for paper_id, paper_info in data.items():
+        # Add the paper node with or without attributes
+        authors = paper_info.pop('authors')
+        dbm.merge_paper(paper_info)
+        for author_info in authors:
+            dbm.merge_author(author_info)
+            dbm.merge_author_paper_relationship(
+                author_info['name'],
+                author_info['org'],
+                paper_info['id']
+            )
+
+    logger.debug("Graph created")
+
+
+if __name__ == '__main__':
+    paper_author_graph()

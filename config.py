@@ -1,31 +1,32 @@
+from dotenv import load_dotenv
 import logging
 import os
 
 # Environment variables
-db_user = os.getenv('DB_USER', 'neo4j')
-db_password = os.getenv('DB_PASSWORD', 'password')
-db_url = os.getenv('DB_URL', 'bolt://localhost:7687')
+load_dotenv(dotenv_path='environment.env')
+
+db_uri = os.getenv('DB_URI')
+db_user = os.getenv('DB_USER')
+db_password = os.getenv('DB_PASSWORD')
+
+log_level_stream = os.getenv('LOG_LEVEL_STREAM', 'INFO')
+log_level_file = os.getenv('LOG_LEVEL_FILE', 'DEBUG')
+log_file_path = os.getenv('LOG_FILE_PATH', 'logs/program.log')
 
 
 # Logging
 def get_logger(
-    name,
-    file_path='logs/program.log',
-    stream_level=logging.DEBUG,
-    file_level=logging.DEBUG
+    name: str,
 ):
     """
     Creates and returns a logger with both StreamHandler and FileHandler.
 
     :param name: Name of the logger.
-    :param file_path: Path to the log file.
-    :param stream_level: Logging level of the stream handler.
-    :param file_level: Logging level of the file handler.
     :return: Configured logger.
     """
 
     logger = logging.getLogger(name)
-    logger.setLevel(stream_level)
+    logger.setLevel(log_level_stream)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -33,13 +34,13 @@ def get_logger(
         os.makedirs('logs')
     # Stream handler
     stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(stream_level)
+    stream_handler.setLevel(log_level_stream)
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
     # File handler
-    file_handler = logging.FileHandler(file_path)
-    file_handler.setLevel(file_level)
+    file_handler = logging.FileHandler(log_file_path)
+    file_handler.setLevel(log_level_file)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 

@@ -7,3 +7,5 @@ networkx
 jupyter
 tensorflow
 beautifulsoup4
+python_dotenv       ~= 1.0.1
+neo4j               ~= 5.18.0
