@@ -1,11 +1,11 @@
 from neo4j import GraphDatabase
-import config
+from src.shared import config
 
 
-class GraphDB:
+class DatabaseWrapper:
 
     def __init__(self):
-        self.logger = config.get_logger("GraphDB")
+        self.logger = config.get_logger("DatabaseWrapper")
         self.logger.info("Connecting to the database")
         self.logger.debug(f"URI: {config.db_uri}")
         self.logger.debug(f"User: {config.db_user}")

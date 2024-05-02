@@ -1,7 +1,7 @@
 import networkx as nx
 from dash import Dash, html
 import dash_cytoscape as cyto
-import config
+from src.shared import config
 
 logger = config.get_logger("Graph")
 

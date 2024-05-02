@@ -1,6 +1,6 @@
 # Python 3.9
 numpy               ~= 1.26.4
-torch               ~= 2.2.1
+torch               ~= 2.2.2
 ampligraph          ~= 2.1.0
 pandas              ~= 2.2.1
 rdflib              ~= 7.0.0
@@ -13,3 +13,5 @@ neo4j               ~= 5.18.0
 dash                ~= 2.16.1
 dash-cytoscape      ~= 1.0.0
 plotly              ~= 5.20.0
+torch_geometric     ~= 2.5.2
+prettytable
