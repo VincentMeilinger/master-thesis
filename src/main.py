@@ -1,13 +1,15 @@
-from src.database import populate_db
-from src.data_processing import parse_datasets
-from shared import config
+from .database import populate_db
+from .data_processing import parse_datasets
+from .shared import config
 import argparse
+import os
 
 logger = config.get_logger("Main")
 
 
 def populate_neo():
-    data = parse_datasets.parse_who_is_who('/data/IND-WhoIsWho/pid_to_info_all.json')
+    who_is_who_path = os.path.join(config.data_dir, 'IND-WhoIsWho/pid_to_info_all.json')
+    data = parse_datasets.parse_who_is_who(who_is_who_path)
     populate_db.populate_who_is_who(data)
     pass
 
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Access the build argument
-    if args.neo:
+    if args.populate_neo:
         logger.info("Populating the Neo4j database.")
         populate_neo()
     if args.train:

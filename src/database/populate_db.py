@@ -1,5 +1,5 @@
-from src import DatabaseWrapper
-from src import config
+from ..shared.database_wrapper import DatabaseWrapper
+from ..shared import config
 
 logger = config.get_logger("PopulateDB")
 
