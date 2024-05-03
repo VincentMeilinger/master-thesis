@@ -1,5 +1,6 @@
 from .database import populate_db
 from .data_processing import parse_datasets
+from .model.GAT import train_gat
 from .shared import config
 import argparse
 import os
@@ -14,7 +15,9 @@ def populate_neo():
     pass
 
 
-def train_model():
+def train_model(data):
+    params = 
+    train_gat.train()
     pass
 
 

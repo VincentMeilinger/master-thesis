@@ -1,5 +1,4 @@
-from .graph_attention import GAT
-import torch.optim as optim
+from src.model.GAT.graph_attention import GAT
 import torch
 
 
