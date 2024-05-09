@@ -16,7 +16,6 @@ def populate_neo():
 
 
 def train_model(data):
-    params = 
     train_gat.train()
     pass
 

@@ -3,9 +3,9 @@ import torch.nn.functional as F
 from torch_geometric.nn import GATConv, GATv2Conv
 
 
-class GAT(torch.nn.Module):
+class GATEncoder(torch.nn.Module):
     def __init__(self, node_feature_dim, edge_feature_dim, embedding_dim):
-        super(GAT, self).__init__()
+        super(GATEncoder, self).__init__()
 
         # First layer:
         #   - use 8 attention heads

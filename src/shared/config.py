@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import logging
+import json
 import os
 
 # Environment variables
@@ -10,6 +11,7 @@ db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
 
 data_dir = os.getenv('DATA_DIR', '/data')
+model_config = os.getenv('MODEL_CONFIG', 'model_config.json')
 
 log_level_stream = os.getenv('LOG_LEVEL_STREAM', 'DEBUG')
 log_level_file = os.getenv('LOG_LEVEL_FILE', 'DEBUG')
@@ -33,10 +35,14 @@ print(f"    - DB_USER: {db_user}")
 print(f"\n=== End Configuration =============================\n")
 
 
+def get_params():
+    with open(model_config, 'r') as file:
+        params = json.load(file)
+        return params
+
+
 # Logging
-def get_logger(
-    name: str,
-):
+def get_logger(name: str):
     """
     Creates and returns a logger with both StreamHandler and FileHandler.
 
