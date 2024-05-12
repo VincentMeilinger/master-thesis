@@ -1,4 +1,5 @@
 # Custom files
+logs/*
 **/data
 **/data/*
 data
