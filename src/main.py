@@ -16,7 +16,7 @@ def populate_neo():
 
 
 def train_model(data):
-    train_gat.train()
+    train_gat.train_supervised(data)
     pass
 
 
