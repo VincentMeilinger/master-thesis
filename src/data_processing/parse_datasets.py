@@ -5,7 +5,7 @@ from .graph_dataset import GraphDataset
 from prettytable import PrettyTable
 from typing import List
 import pandas as pd
-from enum import Enum
+from ..shared.rdf_terms import RdfTerms
 
 
 
@@ -46,27 +46,30 @@ def paper_author_graph(file_path='data/IND-WhoIsWho/pid_to_info_all.json', inclu
 
 
 def parse_who_is_who(file_path='data/IND-WhoIsWho/pid_to_info_all.json'):
-    logger.info("Parsing papers")
+    logger.info("Parsing IND-WhoIsWho")
     logger.debug(f"Loading data from {file_path}")
+    with open(file_path, 'r') as file:
+        data = json.load(file)
 
+    triples = []
     # Iterate over each paper
     for paper_id, paper_info in data.items():
-        # Add the paper node with or without attributes
-        if include_info:
-            g.add_node(paper_info["title"], type='paper', **paper_info)
-        else:
-            g.add_node(paper_info["title"], type='paper')
+        triples.append((paper_id, RdfTerms.IDENTIFIER, paper_info['id']))
+        triples.append((paper_id, RdfTerms.TITLE, paper_info['title']))
+        triples.append((paper_id, RdfTerms.ABSTRACT, paper_info['abstract']))
+        triples.append((paper_id, RdfTerms.VENUE, paper_info['venue']))
+        triples.append((paper_id, RdfTerms.YEAR, paper_info['year']))
 
-        # Iterate over the authors of the paper
         for author in paper_info['authors']:
-            author_id = author['name']
+            triples.append((paper_id, RdfTerms.CREATOR, author['name']))
+            triples.append((author['name'], RdfTerms.NAME, author['name']))
+            triples.append((author['name'], RdfTerms.ORGANIZATION, author['org']))
 
-            if not g.has_node(author_id):
-                g.add_node(author_id, type='author', org=author['org'])
-            # Add an edge between the author and the paper
-            g.add_edge(author_id, paper_id)
+        for keyword in paper_info['keywords']:
+            triples.append((paper_id, RdfTerms.KEYWORD, keyword))
 
-    return data
+    df = pd.DataFrame(triples, columns=['h', 'r', 't'])
+    return GraphDataset('IND-WhoIsWho', pd.DataFrame(columns=['h', 'r', 't']), pd.DataFrame(columns=['h', 'r', 't']), df)
 
 
 def parse_oc782k_and_eval(file_path='data/OC-782K/and_eval.json'):
@@ -118,4 +121,5 @@ def print_ds_stats(datasets: List[GraphDataset]):
 
 if __name__ == '__main__':
     oc_data = parse_oc782k()
-    print_ds_stats([oc_data])
+    who_is_who = parse_who_is_who()
+    print_ds_stats([who_is_who, oc_data])

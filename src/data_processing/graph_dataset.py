@@ -19,11 +19,11 @@ class GraphDataset:
 
         # Gather entities from the specified splits
         if split == 'train' or split == 'all':
-            entities = pd.concat([self.train['s'], self.train['o']])
+            entities = pd.concat([self.train['h'], self.train['t']])
         if split == 'test' or split == 'all':
-            entities = pd.concat([entities, self.test['s'], self.test['o']])
+            entities = pd.concat([entities, self.test['h'], self.test['t']])
         if split == 'valid' or split == 'all':
-            entities = pd.concat([entities, self.valid['s'], self.valid['o']])
+            entities = pd.concat([entities, self.valid['h'], self.valid['t']])
 
         # Drop duplicates to get distinct entities
         distinct_entities = entities.drop_duplicates()
