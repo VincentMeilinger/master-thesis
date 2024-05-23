@@ -12,10 +12,9 @@ def populate_neo():
     who_is_who_path = os.path.join(config.data_dir, 'IND-WhoIsWho/pid_to_info_all.json')
     data = parse_datasets.parse_who_is_who(who_is_who_path)
     populate_db.populate_who_is_who(data)
-    pass
 
 
-def train_model(data):
+def train_model():
     train_gat.train_supervised(data)
     pass
 
