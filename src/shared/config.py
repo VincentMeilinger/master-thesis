@@ -4,7 +4,12 @@ import json
 import os
 
 # Environment variables
-success = load_dotenv(dotenv_path='environment.env')
+env = load_dotenv(dotenv_path='environment.env')
+secret_env = load_dotenv(dotenv_path='secrets.env')
+
+if not secret_env:
+    print("File 'secrets.env' missing. Exiting...")
+    exit(1)
 
 data_dir = os.getenv('DATA_DIR', './data')
 log_dir = os.getenv('LOG_DIR', './logs')
@@ -20,7 +25,7 @@ log_level_file = os.getenv('LOG_LEVEL_FILE', 'DEBUG')
 
 print(f"\n=== Configuration =================================\n")
 
-print(f"Loading environment variables: {'Success' if success else 'Failed'}")
+print(f"Loading environment variables: {'Success' if (env & secret_env) else 'Failed'}")
 
 print(f"\n___ LOGGING _______________________________________\n")
 print(f"    - Stream: {log_level_stream}")
