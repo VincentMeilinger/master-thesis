@@ -7,9 +7,6 @@ from typing import List
 import pandas as pd
 from ..shared.rdf_terms import RdfTerms
 
-
-
-
 logger = config.get_logger("Parser")
 
 
@@ -69,7 +66,8 @@ def parse_who_is_who(file_path='data/IND-WhoIsWho/pid_to_info_all.json'):
             triples.append((paper_id, RdfTerms.KEYWORD, keyword))
 
     df = pd.DataFrame(triples, columns=['h', 'r', 't'])
-    return GraphDataset('IND-WhoIsWho', pd.DataFrame(columns=['h', 'r', 't']), pd.DataFrame(columns=['h', 'r', 't']), df)
+    return GraphDataset('IND-WhoIsWho', pd.DataFrame(columns=['h', 'r', 't']), pd.DataFrame(columns=['h', 'r', 't']),
+                        df)
 
 
 def parse_oc782k_and_eval(file_path='data/OC-782K/and_eval.json'):
@@ -94,18 +92,19 @@ def parse_oc782k(file_path='data/OC-782K/'):
 
 def print_ds_stats(datasets: List[GraphDataset]):
     table = PrettyTable()
-    table.field_names = ["Dataset", "Train Entities", "Test Entities", "Valid Entities", "Total Distinct Entities", "Total Relations"]
+    table.field_names = ["Dataset", "Train Entities", "Test Entities", "Valid Entities", "Total Distinct Entities",
+                         "Total Relations"]
     for dataset in datasets:
         num_train = dataset.count_distinct_entities(split='train')
-        num_train = num_train/1000 if num_train is not None else 0
+        num_train = num_train / 1000 if num_train is not None else 0
         num_test = dataset.count_distinct_entities(split='test')
-        num_test = num_test/1000 if num_test is not None else 0
+        num_test = num_test / 1000 if num_test is not None else 0
         num_valid = dataset.count_distinct_entities(split='valid')
-        num_valid = num_valid/1000 if num_valid is not None else 0
+        num_valid = num_valid / 1000 if num_valid is not None else 0
         num_total = dataset.count_distinct_entities()
-        num_total = num_total/1000 if num_total is not None else 0
+        num_total = num_total / 1000 if num_total is not None else 0
         num_citations = dataset.count_citations()
-        num_citations = num_citations/1000 if num_citations is not None else 0
+        num_citations = num_citations / 1000 if num_citations is not None else 0
 
         # Add row to the table
         table.add_row([
