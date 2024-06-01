@@ -1,5 +1,5 @@
 from .database import populate_db
-from .data_processing import parse_datasets
+from .datasets import parse_datasets
 from .model.GAT import train_gat
 from .shared import config
 import argparse

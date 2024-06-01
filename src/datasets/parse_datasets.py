@@ -1,7 +1,6 @@
 import json
 import networkx as nx
 from ..shared import config
-from .graph_dataset import GraphDataset
 from prettytable import PrettyTable
 from typing import List
 import pandas as pd
@@ -42,32 +41,7 @@ def paper_author_graph(file_path='data/IND-WhoIsWho/pid_to_info_all.json', inclu
     return g
 
 
-def parse_who_is_who(file_path='data/IND-WhoIsWho/pid_to_info_all.json'):
-    logger.info("Parsing IND-WhoIsWho")
-    logger.debug(f"Loading data from {file_path}")
-    with open(file_path, 'r') as file:
-        data = json.load(file)
 
-    triples = []
-    # Iterate over each paper
-    for paper_id, paper_info in data.items():
-        triples.append((paper_id, RdfTerms.IDENTIFIER, paper_info['id']))
-        triples.append((paper_id, RdfTerms.TITLE, paper_info['title']))
-        triples.append((paper_id, RdfTerms.ABSTRACT, paper_info['abstract']))
-        triples.append((paper_id, RdfTerms.VENUE, paper_info['venue']))
-        triples.append((paper_id, RdfTerms.YEAR, paper_info['year']))
-
-        for author in paper_info['authors']:
-            triples.append((paper_id, RdfTerms.CREATOR, author['name']))
-            triples.append((author['name'], RdfTerms.NAME, author['name']))
-            triples.append((author['name'], RdfTerms.ORGANIZATION, author['org']))
-
-        for keyword in paper_info['keywords']:
-            triples.append((paper_id, RdfTerms.KEYWORD, keyword))
-
-    df = pd.DataFrame(triples, columns=['h', 'r', 't'])
-    return GraphDataset('IND-WhoIsWho', pd.DataFrame(columns=['h', 'r', 't']), pd.DataFrame(columns=['h', 'r', 't']),
-                        df)
 
 
 def parse_oc782k_and_eval(file_path='data/OC-782K/and_eval.json'):
@@ -77,17 +51,6 @@ def parse_oc782k_and_eval(file_path='data/OC-782K/and_eval.json'):
         data = json.load(file)
 
     return data
-
-
-def parse_oc782k(file_path='data/OC-782K/'):
-    logger.info("Parsing dataset OC-782K ...")
-    logger.debug(f"Loading data from {file_path}")
-    data = {'train': None, 'test': None, 'valid': None}
-    files = {'training.txt': 'train', 'testing.txt': 'test', 'validation.txt': 'valid'}
-    for file in files.keys():
-        data[files[file]] = pd.read_csv(file_path + file, sep='\t', header=None, names=['h', 'r', 't'])
-
-    return GraphDataset('OC-782K', data['train'], data['test'], data['valid'])
 
 
 def print_ds_stats(datasets: List[GraphDataset]):

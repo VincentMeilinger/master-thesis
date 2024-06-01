@@ -12,6 +12,7 @@ if not secret_env:
     exit(1)
 
 data_dir = os.getenv('DATA_DIR', './data')
+model_dir = os.getenv('MODEL_DIR', './data/models')
 log_dir = os.getenv('LOG_DIR', './logs')
 
 db_uri = os.getenv('DB_URI')
@@ -33,6 +34,7 @@ print(f"    - File: {log_level_file}")
 
 print(f"\n___ DIRS __________________________________________\n")
 print(f"    - DATA_DIR: {data_dir}")
+print(f"    - MODEL_DIR: {model_dir}")
 print(f"    - LOG_DIR: {log_dir}")
 
 print(f"\n___ DATABASE ______________________________________\n")
