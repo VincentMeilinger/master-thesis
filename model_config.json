@@ -12,5 +12,9 @@
     "epochs": 100,
     "save_dir": "data/models/",
     "save_name": "model.pth"
+  },
+  "transformer": {
+    "model": "./data/models/all-mpnet-base-v2-16dim",
+    "batch_size": 10000
   }
 }

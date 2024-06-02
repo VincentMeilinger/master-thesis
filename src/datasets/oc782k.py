@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from prettytable import PrettyTable
 from dataset import Dataset
@@ -10,9 +11,16 @@ class OC782KDataset(Dataset):
     name: str = 'OC-782K'
 
     @staticmethod
-    def parse():
+    def parse(format: str = 'triples'):
+        if format == 'triples':
+            return OC782KDataset._parse_triples()
+        elif format == 'dict':
+            return OC782KDataset._parse_dict()
+
+    @staticmethod
+    def _parse_triples():
         logger.info("Parsing dataset OC-782K ...")
-        file_path = 'data/OC-782K/'
+        file_path = os.path.join(config.dataset_dir, 'OC-782K/')
         logger.debug(f"Loading data from {file_path}")
         data = {'train': None, 'test': None, 'valid': None}
         files = {'training.txt': 'train', 'testing.txt': 'test', 'validation.txt': 'valid'}

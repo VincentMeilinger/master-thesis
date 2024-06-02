@@ -43,31 +43,31 @@ class Dataset:
     def load(self):
         """ Load a previously saved dataset from disk. """
         logger.info(f"Loading {self.name} dataset from disk ... ", end='')
-        if not os.path.exists(f'datasets_processed/{self.name}'):
+        if not os.path.exists(os.path.join(config.dataset_processed_dir, f'{self.name}')):
             raise FileNotFoundError(f"Dataset {self.name} not found.")
 
         # Load the pandas DataFrame from disk
-        if os.path.exists(f'datasets_processed/{self.name}/train.csv'):
-            self.train = pd.read_csv(f'datasets_processed/{self.name}/train.csv')
-        if os.path.exists(f'datasets_processed/{self.name}/test.csv'):
-            self.test = pd.read_csv(f'datasets_processed/{self.name}/test.csv')
-        if os.path.exists(f'datasets_processed/{self.name}/valid.csv'):
-            self.valid = pd.read_csv(f'datasets_processed/{self.name}/valid.csv')
+        if os.path.exists(os.path.join(config.dataset_processed_dir, f'{self.name}/train.csv')):
+            self.train = pd.read_csv(os.path.join(config.dataset_processed_dir, f'{self.name}/train.csv'))
+        if os.path.exists(os.path.join(config.dataset_processed_dir, f'{self.name}/test.csv')):
+            self.test = pd.read_csv(os.path.join(config.dataset_processed_dir, f'{self.name}/test.csv'))
+        if os.path.exists(os.path.join(config.dataset_processed_dir, f'{self.name}/valid.csv')):
+            self.valid = pd.read_csv(os.path.join(config.dataset_processed_dir, f'{self.name}/valid.csv'))
         logger.info("done.")
 
     def save(self):
         """ Save the dataset to disk. """
         logger.info(f"Saving {self.name} dataset to disk ... ", end='')
         # Create the directory to store the processed dataset
-        os.makedirs(f'datasets_processed/{self.name}', exist_ok=True)
+        os.makedirs(os.path.join(config.dataset_processed_dir, f'{self.name}'), exist_ok=True)
 
         # Store the pandas DataFrame to disk
         if self.train:
-            self.train.to_csv(f'datasets_processed/{self.name}/train.csv', index=False)
+            self.train.to_csv(os.path.join(config.dataset_processed_dir, f'{self.name}/train.csv'), index=False)
         if self.test:
-            self.test.to_csv(f'datasets_processed/{self.name}/test.csv', index=False)
+            self.test.to_csv(os.path.join(config.dataset_processed_dir, f'{self.name}/test.csv'), index=False)
         if self.valid:
-            self.valid.to_csv(f'datasets_processed/{self.name}/valid.csv', index=False)
+            self.valid.to_csv(os.path.join(config.dataset_processed_dir, f'{self.name}/valid.csv'), index=False)
         logger.info("done.")
 
     def print_stats(self):

@@ -86,6 +86,7 @@ if __name__ == '__main__':
     full_emb = full_model.encode(train, convert_to_numpy=True)
     logger.info(f"Full model embedding time: {time() - start}s")
 
-    edr_eval(train, full_emb, 128, model_name)
-    edr_eval(train, full_emb, 64, model_name)
-    edr_eval(train, full_emb, 32, model_name)
+    #edr_eval(train, full_emb, 128, model_name)
+    #edr_eval(train, full_emb, 64, model_name)
+    #edr_eval(train, full_emb, 32, model_name)
+    edr_eval(train, full_emb, 16, model_name)

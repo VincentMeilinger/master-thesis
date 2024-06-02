@@ -22,7 +22,7 @@ class WhoIsWhoDataset(Dataset):
     @staticmethod
     def _parse_triples():
         logger.info("Parsing IND-WhoIsWho")
-        file_path = 'data/IND-WhoIsWho/pid_to_info_all.json'
+        file_path = os.path.join(config.dataset_dir, 'IND-WhoIsWho/pid_to_info_all.json')
 
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File {file_path} not found.")
@@ -52,7 +52,7 @@ class WhoIsWhoDataset(Dataset):
 
     @staticmethod
     def _parse_dict():
-        file_path = 'data/IND-WhoIsWho/pid_to_info_all.json'
+        file_path = os.path.join(config.dataset_dir, 'IND-WhoIsWho/pid_to_info_all.json')
 
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File {file_path} not found.")
@@ -61,6 +61,6 @@ class WhoIsWhoDataset(Dataset):
             data = json.load(file)
 
         if not data:
-            raise ValueError(f"Unable to parse data/IND-WhoIsWho/pid_to_info_all.json.")
+            raise ValueError(f"Unable to parse {os.path.join(config.dataset_dir, 'IND-WhoIsWho/pid_to_info_all.json')}.")
 
         return data

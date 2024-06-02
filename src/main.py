@@ -1,26 +1,30 @@
+import os
+import argparse
+from sentence_transformers import SentenceTransformer
+
 from .database import populate_db
-from .datasets import parse_datasets
+from .datasets import who_is_who, oc782k
 from .model.GAT import train_gat
 from .shared import config
-import argparse
-import os
+from .pipeline.create_embeddings import create_embeddings
 
 logger = config.get_logger("Main")
 
 
 def populate_neo():
-    who_is_who_path = os.path.join(config.data_dir, 'IND-WhoIsWho/pid_to_info_all.json')
-    data = parse_datasets.parse_who_is_who(who_is_who_path)
-    populate_db.populate_who_is_who(data)
+    raise NotImplementedError
 
 
 def train_model():
-    train_gat.train_supervised(data)
-    pass
+    raise NotImplementedError
 
 
 def evaluate_model():
-    pass
+    raise NotImplementedError
+
+
+def embed_publications():
+    raise NotImplementedError
 
 
 if __name__ == '__main__':
@@ -30,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--ds_stats', '-dss',
         action='store_true',
-        help='Set to True to populate the Neo4j database.'
+        help='Set to True to print dataset statistics.'
     )
     parser.add_argument(
         '--populate_neo', '-neo',
@@ -57,9 +61,7 @@ if __name__ == '__main__':
     # Access the build argument
     if args.ds_stats:
         logger.info("Calculating dataset statistics.")
-        oc_data = parse_datasets.parse_oc782k()
-        who_is_who = parse_datasets.parse_who_is_who()
-        parse_datasets.print_ds_stats([who_is_who, oc_data])
+        raise NotImplementedError
     if args.populate_neo:
         logger.info("Populating the Neo4j database.")
         populate_neo()

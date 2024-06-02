@@ -1,3 +1,4 @@
+import torch
 from dotenv import load_dotenv
 import logging
 import json
@@ -11,15 +12,17 @@ if not secret_env:
     print("File 'secrets.env' missing. Exiting...")
     exit(1)
 
-data_dir = os.getenv('DATA_DIR', './data')
+dataset_dir = os.getenv('DATASET_DIR', './data/datasets')
+dataset_processed_dir = os.getenv('DATASET_PROCESSED_DIR', './data/datasets_processed')
 model_dir = os.getenv('MODEL_DIR', './data/models')
-log_dir = os.getenv('LOG_DIR', './logs')
+log_dir = os.getenv('LOG_DIR', './data/logs')
 
 db_uri = os.getenv('DB_URI')
 db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
 
 model_config = os.getenv('MODEL_CONFIG', 'model_config.json')
+device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 
 log_level_stream = os.getenv('LOG_LEVEL_STREAM', 'DEBUG')
 log_level_file = os.getenv('LOG_LEVEL_FILE', 'DEBUG')
@@ -29,17 +32,21 @@ print(f"\n=== Configuration =================================\n")
 print(f"Loading environment variables: {'Success' if (env & secret_env) else 'Failed'}")
 
 print(f"\n___ LOGGING _______________________________________\n")
-print(f"    - Stream: {log_level_stream}")
-print(f"    - File: {log_level_file}")
+print(f"    - Stream:                   {log_level_stream}")
+print(f"    - File:                     {log_level_file}")
 
 print(f"\n___ DIRS __________________________________________\n")
-print(f"    - DATA_DIR: {data_dir}")
-print(f"    - MODEL_DIR: {model_dir}")
-print(f"    - LOG_DIR: {log_dir}")
+print(f"    - DATASET_DIR:              {dataset_dir}")
+print(f"    - DATASET_PROCESSED_DIR:    {dataset_processed_dir}")
+print(f"    - MODEL_DIR:                {model_dir}")
+print(f"    - LOG_DIR:                  {log_dir}")
 
 print(f"\n___ DATABASE ______________________________________\n")
-print(f"    - DB_URI: {db_uri}")
-print(f"    - DB_USER: {db_user}")
+print(f"    - DB_URI:                   {db_uri}")
+print(f"    - DB_USER:                  {db_user}")
+
+print(f"\n___ DEVICE ________________________________________\n")
+print(f"    - Device:                   {device.type}")
 
 print(f"\n=== End Configuration =============================\n")
 
@@ -84,7 +91,11 @@ def get_logger(name: str):
 
 
 def create_dirs():
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    if not os.path.exists(dataset_dir):
+        os.makedirs(dataset_dir)
+    if not os.path.exists(dataset_processed_dir):
+        os.makedirs(dataset_processed_dir)
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
