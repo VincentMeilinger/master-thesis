@@ -36,27 +36,27 @@ def create_embeddings_batch(publication_data: list, state: dict, batch_file_name
     params = config.get_params()
 
     # Load SentenceTransformer model
-    logger.info(f"Loading SentenceTransformer model {params['transformer']['model']} ...")
+    logger.info(f"Loading SentenceTransformer model {params['embed_datasets']['transformer_model']} ...")
     model = SentenceTransformer(
-        params['transformer']['model'],
+        params['embed_datasets']['transformer_model'],
         device=config.device,
         local_files_only=True
     )
 
-    logger.info(f"Creating publication data embeddings in batches of {params['transformer']['batch_size']} ...")
-    num_batches = len(publication_data) // params['transformer']['batch_size']
+    logger.info(f"Creating publication data embeddings in batches of {params['embed_datasets']['batch_size']} ...")
+    num_batches = len(publication_data) // params['embed_datasets']['batch_size']
 
     # Process publication data in batches
-    for i in range(0, len(publication_data), params['transformer']['batch_size']):
+    for i in range(0, len(publication_data), params['embed_datasets']['batch_size']):
         start_time = time()
-        current_batch = i // params['transformer']['batch_size'] + 1
+        current_batch = i // params['embed_datasets']['batch_size'] + 1
         if int(state['embed_datasets']['progress']) >= current_batch:
             logger.info(f"Skipping batch {current_batch}/{num_batches} (already processed).")
             continue
 
         # Process batch
         logger.info(f"Processing batch {current_batch}/{num_batches} ...")
-        batch = publication_data[i:i + params['transformer']['batch_size']]
+        batch = publication_data[i:i + params['embed_datasets']['batch_size']]
         embeddings = create_embeddings(model, batch)
 
         # Save processed data

@@ -1,0 +1,9 @@
+{
+  "embed_datasets": {
+    "transformer_model": "./data/models/all-mpnet-base-v2-16dim",
+    "batch_size": 10000
+  },
+  "populate_db": {
+    "neo4j_database_name": "knowledge_graph"
+  }
+}

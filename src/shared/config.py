@@ -22,7 +22,7 @@ db_uri = os.getenv('DB_URI')
 db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
 
-model_config = os.getenv('MODEL_CONFIG', 'model_config.json')
+model_config = os.getenv('PIPELINE_CONFIG', 'pipeline_config.json')
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 
 log_level_stream = os.getenv('LOG_LEVEL_STREAM', 'DEBUG')

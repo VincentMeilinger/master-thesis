@@ -1,7 +1,7 @@
 import os
 import argparse
 from .shared import config
-from .pipeline.create_embeddings import embed_datasets
+from .pipeline.embed_datasets import embed_datasets
 
 logger = config.get_logger("Main")
 
