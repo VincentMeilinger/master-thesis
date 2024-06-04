@@ -1,8 +1,8 @@
 import os
 import argparse
-from .shared import config
-from .pipeline.embed_datasets import embed_datasets
-
+from src.shared import config
+from src.pipeline.embed_datasets import embed_datasets
+from src.pipeline.prep_transformer import prep_transformer
 logger = config.get_logger("Main")
 
 
@@ -14,6 +14,11 @@ if __name__ == '__main__':
         '--clear_pipeline_state', '-clear',
         action='store_true',
         help='Set to True to print dataset statistics.'
+    )
+    parser.add_argument(
+        '--prepare_pipeline', '-prep',
+        action='store_true',
+        help='Set to True to create the models needed for the pipeline.'
     )
     parser.add_argument(
         '--ds_stats', '-dss',
@@ -51,6 +56,9 @@ if __name__ == '__main__':
     if args.ds_stats:
         logger.info("Calculating dataset statistics.")
         raise NotImplementedError
+    if args.prepare_pipeline:
+        logger.info("Preparing the pipeline.")
+        prep_transformer()
     if args.embed_publications:
         logger.info("Embedding publications.")
         embed_datasets()

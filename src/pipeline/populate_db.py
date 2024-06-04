@@ -16,7 +16,7 @@ def iter_processed_publication_data():
     for file_name in file_names:
         file_path = os.path.join(config.dataset_processed_dir, file_name)
         with open(file_path, 'r') as file:
-            logger.info(f"Parsing file {current_file}/{num_files}")
+            logger.info(f"Parsing file {current_file}/{num_files} ...")
             current_file += 1
             data = json.load(file)
             yield data
@@ -37,6 +37,7 @@ def populate_db(data: list):
 
     params = config.get_params()['populate_db']
     state = config.get_pipeline_state()
+
     logger.info(f"Populating neo4j database {params['neo4j_database_name']}")
     db = DatabaseWrapper()
 

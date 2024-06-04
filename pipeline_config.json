@@ -1,4 +1,9 @@
 {
+  "prepare_pipeline": {
+    "model_name": "all-mpnet-base-v2",
+    "reduced_dim": 16,
+    "num_pca_samples": 10000
+  },
   "embed_datasets": {
     "transformer_model": "./data/models/all-mpnet-base-v2-16dim",
     "batch_size": 10000

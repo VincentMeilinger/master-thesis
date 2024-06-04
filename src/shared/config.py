@@ -92,7 +92,18 @@ def get_pipeline_state():
 def init_pipeline_state():
     # Initialize pipeline state
     state = {
-        'embed_datasets': {'state': 'not_started'},
+        'prepare_pipeline': {'state': 'not_started'},
+        'embed_datasets': {'state': {
+            'embed_nodes': {
+                'state': 'not_started',
+                'progress': 0
+            },
+            'embed_edges': {
+                'state': 'not_started',
+                'progress': 0
+            }
+
+        }},
         'populate_db': {'state': 'not_started'},
         'train_model': {'state': 'not_started'},
         'evaluate_model': {'state': 'not_started'},
