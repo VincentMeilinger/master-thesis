@@ -66,13 +66,26 @@ An embedding for the new author and paper nodes respectively will be generated u
 A Graph Attention Network (GAT) is used to generate embeddings for the nodes in the knowledge graph that encode the structure of the graph.
 Based on these embeddings, the similarity between publication nodes can be calculated and used for entity resolution tasks.
 
-## Pipeline Setup
-### Sentence Transformer Dimensionality Reduction (`pipeline/emb_dim_reduction.py`)
+## Pipeline
+
+<details>
+<summary><h3> 
+Sentence Transformer Dimensionality Reduction 
+</h3></summary>
+
+> `pipeline/emb_dim_reduction.py`
+
 The Sentence Transformer model is used to generate embeddings for the publication titles and abstracts. 
 To improve AND performance, the embeddings are reduced to a lower dimensionality using PCA to get the important features and a dense layer with weights initialized using the principal components.
+</details>
 
-## Pipeline
-### 1. Data Preprocessing (`pipeline/preprocess_datasets.py`)
+<details>
+<summary><h3> 
+Data Preprocessing
+</h3></summary>
+
+> `pipeline/preprocess_datasets.py`
+
 Load the publication data from the data sources in the following format: 
  ```json
  [
@@ -93,8 +106,15 @@ Load the publication data from the data sources in the following format:
  ]
  ```
 Standardize and clean the values.
+</details>
 
-### 2. Publication Embedding (`pipeline/embed_datasets.py`)
+<details>
+<summary><h3> 
+Publication Embedding 
+</h3></summary>
+
+> `pipeline/embed_datasets.py`
+
 Create embeddings for the publications based on title and abstract in batches. 
 The embedding vectors of the publication features are concatenated to form the final embedding.
 Save each batch of embeddings (base64 encoded) alongside the respective publication ids in files for later pipeline steps.
@@ -106,7 +126,16 @@ The embedding files follow the format:
         ...
     }
     ```
-### 3. Populate the KG database (`pipeline/populate_db.py`)
+
+</details>
+
+<details>
+<summary><h3> 
+Populate the KG database
+</h3></summary>
+ 
+> `pipeline/populate_db.py`
+
 (TODO)
 
-
+</details>
