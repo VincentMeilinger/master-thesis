@@ -26,7 +26,7 @@ def edr_eval(train, full_emb, new_dimension: int, model_name: str = "all-mpnet-b
     logger.info("Generating embeddings ...")
     model = SentenceTransformer(
         model_name,
-        device=config.device
+        device=config.DEVICE
     )
 
     # PCA on train embeddings
@@ -90,8 +90,8 @@ def prep_transformer():
     logger.info(f"Embedding train data using full model {model_name} ...")
     full_model = SentenceTransformer(
         model_name,
-        cache_folder=config.model_dir,
-        device=config.device
+        cache_folder=config.MODEL_DIR,
+        device=config.DEVICE
     )
     start = time()
     full_emb = full_model.encode(train, convert_to_numpy=True)

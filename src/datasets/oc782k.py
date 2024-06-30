@@ -20,7 +20,7 @@ class OC782KDataset(Dataset):
     @staticmethod
     def _parse_triples():
         logger.info("Parsing dataset OC-782K ...")
-        file_path = os.path.join(config.dataset_dir, 'OC-782K/')
+        file_path = os.path.join(config.DATASET_DIR, 'OC-782K/')
         logger.debug(f"Loading data from {file_path}")
         data = {'train': None, 'test': None, 'valid': None}
         files = {'training.txt': 'train', 'testing.txt': 'test', 'validation.txt': 'valid'}
@@ -28,12 +28,6 @@ class OC782KDataset(Dataset):
             data[files[file]] = pd.read_csv(file_path + file, sep='\t', header=None, names=['h', 'r', 't'])
 
         return data
-
-    def load(self):
-        super().load()
-
-    def save(self):
-        super().save()
 
     def print_stats(self):
         super().print_stats()

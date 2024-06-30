@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GATConv, GATv2Conv
+from torch_geometric.nn import GATv2Conv
 
 
 class GATEncoder(torch.nn.Module):

@@ -1,4 +1,4 @@
-from .gat_encoder import GATEncoder
+from src.model.GAT.gat_encoder import GATEncoder
 from src.shared import config
 import torch
 

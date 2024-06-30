@@ -7,25 +7,40 @@ class DatabaseWrapper:
     def __init__(self):
         self.logger = config.get_logger("DatabaseWrapper")
         self.logger.info("Connecting to the database")
-        self.logger.debug(f"URI: {config.db_uri}")
-        self.logger.debug(f"User: {config.db_user}")
-        self.driver = GraphDatabase.driver(config.db_uri, auth=(config.db_user, config.db_password))
+        self.logger.debug(f"URI: {config.DB_URI}")
+        self.logger.debug(f"User: {config.DB_USER}")
+        self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD))
 
     def close(self):
         self.logger.info("Closing the database connection")
         self.driver.close()
 
-    def create_node_with_dict(self, label, properties):
+    def create_node(self, label, properties):
         with self.driver.session() as session:
             # Define the Cypher query
-            cypher_query = f"CREATE (n:{label} $props) RETURN n"
+            query = "CREATE (n:$label $props) RETURN n"
 
             # Execute the query
-            session.run(cypher_query, props=properties)
+            session.run(query, label=label, props=properties)
+
+    def merge_node(self, label: str, id: str, properties:dict):
+        with self.driver.session() as session:
+            # Construct the query dynamically based on the label and properties
+            query = """
+            MERGE (n:$label {id: $id})
+            ON CREATE SET n += $properties
+            ON MATCH SET n += $properties
+            RETURN n
+            """
+
+            result = session.run(query, label=label, id=id, properties=properties)
+
+            if result.single() is None:
+                self.logger.error(f"Failed to create paper {properties['id']}")
 
     def merge_paper(self, properties):
         with self.driver.session() as session:
-            # Construct the query dynamically based on the label and properties
+            # Construct the query dynamically based on the properties
             cypher_query = """
             MERGE (n:Paper {id: $id})
             ON CREATE SET n += $properties

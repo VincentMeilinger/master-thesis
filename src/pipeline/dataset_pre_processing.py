@@ -6,3 +6,6 @@ from ..datasets.who_is_who import WhoIsWhoDataset
 
 logger = config.get_logger("DatasetPreProcessing")
 
+
+def dataset_pre_processing():
+    pass

@@ -7,7 +7,7 @@ This repository contains the code and the data used for the experiments in the m
 The research questions addressed in this thesis are:
 - How can Graph Learning methods be effectively used on the inherently heterogeneous public domain publication
 knowledge graphs to disambiguate author names?
-- Can relational learning methods be used on the knowledge graph to improve the performance of graph learning
+- Can Relational Learning methods be used on the knowledge graph for publication linkage (KGC) to improve the performance of graph learning
 methods for entity resolution tasks?
 
 ## Data Sources
@@ -105,6 +105,7 @@ Load the publication data from the data sources in the following format:
    }, ...
  ]
  ```
+
 Standardize and clean the values.
 </details>
 
@@ -136,6 +137,15 @@ Populate the KG database
  
 > `pipeline/populate_db.py`
 
-(TODO)
+Create nodes in the Neo4j database for the publications.
+Nodes contain the following properties:
+- id
+- title
+- abstract
+- authors
+- venue
+- year
+- keywords
+- embedding
 
 </details>
