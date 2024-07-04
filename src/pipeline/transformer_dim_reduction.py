@@ -1,14 +1,15 @@
 import os
-from time import time
+import torch
 import random
 import numpy as np
-import torch
+from time import time
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer, models
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
-from ..datasets.who_is_who import WhoIsWhoDataset
+
 from ..shared import config
+from ..shared.run_config import RunConfig
+from ..datasets.who_is_who import WhoIsWhoDataset
 
 logger = config.get_logger("EmbDimReduction")
 
@@ -59,7 +60,7 @@ def edr_eval(train, full_emb, new_dimension: int, model_name: str = "all-mpnet-b
 
 
 def prep_transformer():
-    params = config.get_params()
+    run_config = RunConfig(config.RUN_DIR)
     state = config.get_pipeline_state()
 
     if state['prepare_pipeline']['state'] == 'completed':
@@ -81,15 +82,13 @@ def prep_transformer():
     test_size = int(0.1 * len(abstracts))
     train, test, valid = abstracts[:train_size], abstracts[train_size:train_size + test_size], abstracts[
                                                                                                train_size + test_size:]
-    max_samples = int(params['prepare_pipeline']['num_pca_samples'])
+    max_samples = int(run_config.transformer_dim_reduction.num_pca_samples)
     train = train[0:max_samples]
 
     # Embed train data using full model for comparison
-    model_name = params['prepare_pipeline']['model_name']
-    reduced_dim = params['prepare_pipeline']['reduced_dim']
-    logger.info(f"Embedding train data using full model {model_name} ...")
+    logger.info(f"Embedding train data using full model {run_config.transformer_dim_reduction.base_model} ...")
     full_model = SentenceTransformer(
-        model_name,
+        run_config.transformer_dim_reduction.base_model,
         cache_folder=config.MODEL_DIR,
         device=config.DEVICE
     )
@@ -98,6 +97,11 @@ def prep_transformer():
     logger.info(f"Full model embedding time: {time() - start}s")
 
     # Reduce the dimensionality of the embeddings, evaluate the performance compared to the full model
-    edr_eval(train, full_emb, reduced_dim, model_name)
+    edr_eval(
+        train,
+        full_emb,
+        new_dimension=run_config.transformer_dim_reduction.reduced_dim,
+        model_name=run_config.transformer_dim_reduction.base_model
+    )
     state['prepare_pipeline']['state'] = 'completed'
     config.save_pipeline_state(state)

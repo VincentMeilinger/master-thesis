@@ -3,48 +3,46 @@ import os
 
 from ..shared.database_wrapper import DatabaseWrapper
 from ..shared import config
-
+from ..datasets.who_is_who import WhoIsWhoDataset
+from ..shared.run_config import RunConfig
 logger = config.get_logger('PopulateDB')
 
 
-def iter_processed_publications():
-    """ Save the processed data to a file. """
-    # Save as json
-    file_names = os.listdir(config.PROCESSED_DATA_DIR)
-    num_files = len(file_names)
-    current_file = 1
-    for file_name in file_names:
-        file_path = os.path.join(config.PROCESSED_DATA_DIR, file_name)
-        with open(file_path, 'r') as file:
-            logger.info(f"Parsing file {current_file}/{num_files} ...")
-            current_file += 1
-            data = json.load(file)
-            for pub in data:
-                yield pub
-
-
-def add_publication_nodes(db: DatabaseWrapper):
+def add_publication_nodes(db: DatabaseWrapper, data, run_config: RunConfig):
     logger.debug("Populating neo4j graph database with publication nodes ...")
-    for pub in iter_processed_publications():
-        # Add a node containing paper id and embedding
-        # Pop id value from the dictionary
+    for pub in data:
         pub_id = pub.pop('id')
-        db.merge_node("Publication", pub_id, pub)
+        pub_data = {
+            'title': pub['title'],
+            'abstract': pub['abstract'][0:run_config.populate_db.max_seq_len],
+            'venue': pub['venue'],
+            'year': pub['year'],
+            'keywords': pub['keywords'],
+        }
+        db.merge_node("Publication", pub_id, pub_data)
 
 
 def populate_db():
     """Expects a list of dictionaries where each dictionary comprises the publication id, the embedding, and any
     information that can be used to form links between publications."""
 
-    params = config.get_params()['populate_db']
+    run_config = RunConfig(config.RUN_DIR)
     state = config.get_pipeline_state()
 
-    logger.info(f"Populating neo4j database {params['neo4j_database_name']}")
+    logger.info(f"Populating neo4j database {run_config.populate_db.db_name} ...")
     db = DatabaseWrapper()
 
+    data = WhoIsWhoDataset.parse(format='dict')
+    data = [value for key, value in data.items()]
+    if run_config.populate_db.db_max_nodes is not None:
+        data = data[:run_config.populate_db.db_max_nodes]
+
     # Add publication nodes
-    add_publication_nodes(db)
+    if not state['populate_db']['nodes'] == 'completed':
+        add_publication_nodes(db, data, run_config)
+        state['populate_db']['nodes'] = 'completed'
 
     # Add connections to other papers based on author, venue, and keywords
-    raise NotImplementedError
+    # TODO
+
     logger.info("Done.")

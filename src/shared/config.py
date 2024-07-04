@@ -1,10 +1,9 @@
-from dotenv import load_dotenv
-from datetime import datetime
-import logging
-import shutil
-import torch
-import json
 import os
+import json
+import torch
+import logging
+from datetime import datetime
+from dotenv import load_dotenv
 
 # Environment variables
 env = load_dotenv(dotenv_path='environment.env')
@@ -19,7 +18,8 @@ DB_URI = os.getenv('DB_URI')
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 
-# Device
+# Transformer
+MAX_SEQ_LEN = int(os.getenv('MAX_SEQ_LEN', 256))
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 
 # Logging
@@ -42,14 +42,6 @@ RUN_DIR = os.path.join(PIPELINE_DIR, RUN_ID)
 LOG_DIR = os.path.join(RUN_DIR, os.getenv('LOG_DIR', 'logs'))
 PROCESSED_DATA_DIR = os.path.join(RUN_DIR, os.getenv('PROCESSED_DATA_DIR', 'processed_data'))
 PIPELINE_STATE_FILE = os.path.join(RUN_DIR, os.getenv('PIPELINE_STATE_FILE', 'pipeline_state.json'))
-PIPELINE_CONFIG_FILE = os.path.join(RUN_DIR, os.getenv('PIPELINE_CONFIG_FILE', 'pipeline_config.json'))
-shutil.copy('pipeline_config.json', PIPELINE_CONFIG_FILE)
-
-
-def get_params():
-    with open(PIPELINE_CONFIG_FILE, 'r') as file:
-        params = json.load(file)
-        return params
 
 
 # Logging
@@ -130,16 +122,17 @@ def init_pipeline_state():
         },
         'embed_datasets': {
             'embed_nodes': {
-                    'state': 'not_started',
-                    'progress': 0
-                },
+                'state': 'not_started',
+                'progress': 0
+            },
             'embed_edges': {
                 'state': 'not_started',
                 'progress': 0
             }
         },
         'populate_db': {
-            'state': 'not_started'
+            'nodes': 'not_started',
+            'edges': 'not_started'
         },
         'train_model': {
             'state': 'not_started'
@@ -157,7 +150,7 @@ def init_pipeline_state():
 def print_config():
     print(f"\n=== Configuration =================================\n")
 
-    print(f"    > Run ID: {RUN_ID} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    print(f"    > Run ID: {RUN_ID} >>>>>>>>>>>>>>>")
     print(f"    > Loading environment variables: {'Success' if (env & secret_env) else 'Failed'}")
 
     print(f"\n___ LOGGING _______________________________________\n")
@@ -183,11 +176,12 @@ def print_config():
     print(f"\n=== End Configuration =============================\n")
 
 
-# Initial setup
-create_dirs()
+def init():
+    # Initial setup
+    create_dirs()
 
-# Generate pipeline state for the current run
-if not os.path.exists(PIPELINE_STATE_FILE):
-    init_pipeline_state()
+    # Generate pipeline state for the current run
+    if not os.path.exists(PIPELINE_STATE_FILE):
+        init_pipeline_state()
 
-print_config()
+    print_config()
