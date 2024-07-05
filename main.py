@@ -1,11 +1,18 @@
 import os
 import argparse
-from src.shared import config
-from src.shared import database_wrapper
-from src.pipeline.embed_nodes import embed_nodes
-from src.pipeline.transformer_dim_reduction import prep_transformer
-from src.pipeline.populate_db import populate_db
-from src.pipeline.dataset_pre_processing import dataset_pre_processing
+
+from src.shared import (
+    config,
+    database_wrapper
+)
+from src.pipeline import (
+    embed_nodes,
+    transformer_dim_reduction,
+    populate_db,
+    dataset_pre_processing,
+    train_gat,
+    create_edges
+)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train the AND model, populate the Neo4j database.")
@@ -35,6 +42,11 @@ if __name__ == '__main__':
         '--populate_neo', '-neo',
         action='store_true',
         help='Set to True to populate the Neo4j database.'
+    )
+    parser.add_argument(
+        '--edges', '-edges',
+        action='store_true',
+        help='Set to True to create the edges of the neo4j KG.'
     )
     parser.add_argument(
         '--train', '-t',
@@ -78,26 +90,31 @@ if __name__ == '__main__':
         raise NotImplementedError
     if args.prepare_pipeline:
         logger.info("Preparing the pipeline.")
-        prep_transformer()
+        transformer_dim_reduction.prep_transformer()
 
     # Run the whole pipeline
     if args.all:
         logger.info("No arguments provided. Running all steps.")
-        dataset_pre_processing()
-        populate_db()
-        embed_nodes()
+        dataset_pre_processing.dataset_pre_processing()
+        populate_db.populate_db()
+        embed_nodes.embed_nodes()
+        create_edges.create_edges()
+        train_gat.train_gat()
         exit(0)
 
     # Run individual steps
     if args.populate_neo:
         logger.info("Populating the Neo4j database.")
-        populate_db()
+        populate_db.populate_db()
     if args.embed_publications:
         logger.info("Embedding publications.")
-        embed_nodes()
+        embed_nodes.embed_nodes()
+    if args.edges:
+        logger.info("Creating the edges of the Neo4j KG.")
+        create_edges.create_edges()
     if args.train:
         logger.info("Training the AND model.")
-        raise NotImplementedError
+        train_gat.train_gat()
     if args.eval:
         logger.info("Evaluating the AND model.")
         raise NotImplementedError

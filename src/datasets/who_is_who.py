@@ -1,9 +1,11 @@
 import os
 import json
 import pandas as pd
+
+from .dataset import Dataset
 from ..shared import config
 from ..shared.rdf_terms import RdfTerms
-from .dataset import Dataset
+from ..shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("Dataset")
 
@@ -61,6 +63,30 @@ class WhoIsWhoDataset(Dataset):
             data = json.load(file)
 
         if not data:
-            raise ValueError(f"Unable to parse {os.path.join(config.DATASET_DIR, 'IND-WhoIsWho/pid_to_info_all.json')}.")
+            raise ValueError(
+                f"Unable to parse {os.path.join(config.DATASET_DIR, 'IND-WhoIsWho/pid_to_info_all.json')}.")
 
         return data
+
+    @staticmethod
+    def paper_nodes_to_db(db: DatabaseWrapper, max_nodes: int, max_seq_len: int):
+        """ Populate the database with the WhoIsWho dataset. """
+
+        data = WhoIsWhoDataset.parse(format='dict')
+        data = [value for key, value in data.items()]
+        if max_nodes is not None:
+            data = data[:max_nodes]
+
+        for pub in data:
+            pub_id = pub.pop('id')
+            pub_data = {
+                'title': pub['title'],
+                'abstract': pub['abstract'][0:max_seq_len],
+                'venue': pub['venue'],
+                'year': pub['year'],
+                'keywords': pub['keywords'],
+            }
+            db.merge_node("Publication", pub_id, pub_data)
+
+
+

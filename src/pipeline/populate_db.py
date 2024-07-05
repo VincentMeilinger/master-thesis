@@ -34,8 +34,8 @@ def populate_db():
 
     data = WhoIsWhoDataset.parse(format='dict')
     data = [value for key, value in data.items()]
-    if run_config.populate_db.db_max_nodes is not None:
-        data = data[:run_config.populate_db.db_max_nodes]
+    if run_config.populate_db.max_nodes is not None:
+        data = data[:run_config.populate_db.max_nodes]
 
     # Add publication nodes
     if not state['populate_db']['nodes'] == 'completed':

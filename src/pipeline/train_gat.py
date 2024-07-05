@@ -1,8 +1,19 @@
-from src.model.GAT.gat_encoder import GATEncoder
-from src.shared import config
 import torch
+import pandas as pd
+
+from src.shared import config
+from src.model.GAT.gat_encoder import GATEncoder
+from src.shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("Train")
+
+
+def load_training_data(db: DatabaseWrapper):
+    logger.info("Loading training data ...")
+    node_df = db.get_all_nodes_and_properties("Publication", ["id", "abstract_emb", "title_emb"])
+    logger.info("Done.")
+    print(node_df.head())
+    return node_df
 
 
 def train_supervised(x_train, y_train, x_test, y_test, params: dict):
@@ -43,3 +54,8 @@ def train_supervised(x_train, y_train, x_test, y_test, params: dict):
     # Save model weights
     logger.info("Training complete. Saving model weights ...")
     torch.save(model.state_dict(), 'model_weights.pth')
+
+
+def train_gat():
+    db = DatabaseWrapper()
+    node_df = load_training_data(db)

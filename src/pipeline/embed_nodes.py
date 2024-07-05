@@ -6,7 +6,7 @@ from ..shared import config
 from ..shared.run_config import RunConfig
 from ..shared.database_wrapper import DatabaseWrapper
 
-logger = config.get_logger("EmbedDatasets")
+logger = config.get_logger("EmbedNodes")
 
 
 def yield_node_embeddings(model, publication_data: list) -> list:
