@@ -9,7 +9,7 @@ class TransformerDimReductionConfig:
         self.num_pca_samples = 10000
 
 
-class PopulateDBConfig:
+class CreateNodesConfig:
     def __init__(self):
         self.db_name = "knowledge_graph"
         self.max_nodes = 1000
@@ -33,7 +33,7 @@ class RunConfig:
     def __init__(self, run_path: str):
         self.run_path = run_path
         self.transformer_dim_reduction = TransformerDimReductionConfig()
-        self.populate_db = PopulateDBConfig()
+        self.create_nodes = CreateNodesConfig()
         self.embed_datasets = EmbedDatasetsConfig()
         self.create_edges = CreateEdgesConfig()
 
@@ -55,9 +55,9 @@ class RunConfig:
         self.transformer_dim_reduction.reduced_dim = config.getint('transformer_dim_reduction', 'reduced_dim', fallback=16)
         self.transformer_dim_reduction.num_pca_samples = config.getint('transformer_dim_reduction', 'num_pca_samples', fallback=10000)
 
-        self.populate_db.db_name = config.get('populate_db', 'db_name', fallback='knowledge_graph')
-        self.populate_db.max_nodes = config.getint('populate_db', 'max_nodes', fallback=0)
-        self.populate_db.max_seq_len = config.getint('populate_db', 'max_seq_len', fallback=256)
+        self.create_nodes.db_name = config.get('populate_db', 'db_name', fallback='knowledge_graph')
+        self.create_nodes.max_nodes = config.getint('populate_db', 'max_nodes', fallback=0)
+        self.create_nodes.max_seq_len = config.getint('populate_db', 'max_seq_len', fallback=256)
 
         self.embed_datasets.transformer_model = config.get('embed_datasets', 'transformer_model', fallback='./data/models/all-mpnet-base-v2-16dim')
         self.embed_datasets.batch_size = config.getint('embed_datasets', 'batch_size', fallback=1000)
@@ -75,7 +75,7 @@ class RunConfig:
         config.add_section('train_graph_model')
         config.add_section('evaluate_graph_model')
         config['transformer_dim_reduction'] = self.transformer_dim_reduction.__dict__
-        config['populate_db'] = self.populate_db.__dict__
+        config['populate_db'] = self.create_nodes.__dict__
         config['embed_datasets'] = self.embed_datasets.__dict__
         config['create_edges'] = self.create_edges.__dict__
 

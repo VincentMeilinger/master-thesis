@@ -20,10 +20,9 @@ class DatabaseWrapper:
         self.create_vector_index("titleEmbIndex", "Publication", "title_emb", 16)
 
     def create_vector_index(self, index, label, key, dimensions):
-        logger.info(
+        logger.debug(
             f"Creating vector index '{index}' for label '{label}' on key '{key}' with '{dimensions}' dimensions.")
         with self.driver.session() as session:
-            # Define the Cypher query
             query = f"""
             CREATE VECTOR INDEX {index} IF NOT EXISTS
             FOR (n:{label})
@@ -36,9 +35,8 @@ class DatabaseWrapper:
             session.run(query)
 
     def create_index(self, index, label, key):
-        logger.info(f"Creating index '{index}' for label '{label}' on key '{key}'.")
+        logger.debug(f"Creating index '{index}' for label '{label}' on key '{key}'.")
         with self.driver.session() as session:
-            # Define the Cypher query
             query = f"""
             CREATE INDEX {index} IF NOT EXISTS
             FOR (n:{label})
@@ -154,3 +152,9 @@ class DatabaseWrapper:
     def close(self):
         logger.info("Closing the database connection")
         self.driver.close()
+
+    def custom_query(self, query, parameters=None):
+        logger.debug(f"Running custom query: {query} with parameters: {parameters}")
+        with self.driver.session() as session:
+            result = session.run(query, parameters)
+            return result.data()

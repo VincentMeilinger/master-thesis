@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-from prettytable import PrettyTable
 from dataset import Dataset
 from ..shared import config
 

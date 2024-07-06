@@ -3,12 +3,13 @@ import argparse
 
 from src.shared import (
     config,
+    pipeline_state,
     database_wrapper
 )
 from src.pipeline import (
     embed_nodes,
     transformer_dim_reduction,
-    populate_db,
+    create_nodes,
     dataset_pre_processing,
     train_gat,
     create_edges
@@ -19,9 +20,14 @@ if __name__ == '__main__':
 
     # Arguments
     parser.add_argument(
-        '--clear_pipeline_state', '-clear',
+        '--reset_state', '-reset',
         action='store_true',
         help='Set to True to print dataset statistics.'
+    )
+    parser.add_argument(
+        '--delete_db', '-del',
+        action='store_true',
+        help='Delete the Neo4J database.'
     )
     parser.add_argument(
         '--prepare_pipeline', '-prep',
@@ -63,11 +69,6 @@ if __name__ == '__main__':
         action='store_true',
         help='Set to True to run whole pipeline.'
     )
-    parser.add_argument(
-        '--delete_db', '-del',
-        action='store_true',
-        help='Delete the Neo4J database.'
-    )
 
     # Setup logging
     logger = config.get_logger("Main")
@@ -75,12 +76,14 @@ if __name__ == '__main__':
     # Parse the arguments
     args = parser.parse_args()
 
-    config.init()
+    # Initial setup
+    config.create_dirs()
+    config.print_config()
 
     # Access the build argument
-    if args.clear_pipeline_state:
-        logger.info("Clearing the pipeline state.")
-        config.clear_pipeline_state()
+    if args.reset_state:
+        logger.info("Resetting the pipeline state.")
+        pipeline_state.PipelineState(config.RUN_ID, config.RUN_DIR).reset()
     if args.delete_db:
         logger.info("Deleting the Neo4j database.")
         db = database_wrapper.DatabaseWrapper()
@@ -96,7 +99,7 @@ if __name__ == '__main__':
     if args.all:
         logger.info("No arguments provided. Running all steps.")
         dataset_pre_processing.dataset_pre_processing()
-        populate_db.populate_db()
+        create_nodes.create_nodes()
         embed_nodes.embed_nodes()
         create_edges.create_edges()
         train_gat.train_gat()
@@ -105,7 +108,7 @@ if __name__ == '__main__':
     # Run individual steps
     if args.populate_neo:
         logger.info("Populating the Neo4j database.")
-        populate_db.populate_db()
+        create_nodes.create_nodes()
     if args.embed_publications:
         logger.info("Embedding publications.")
         embed_nodes.embed_nodes()

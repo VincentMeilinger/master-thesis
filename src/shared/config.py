@@ -41,7 +41,6 @@ MODEL_DIR = os.getenv('MODEL_DIR', './data/models')
 RUN_DIR = os.path.join(PIPELINE_DIR, RUN_ID)
 LOG_DIR = os.path.join(RUN_DIR, os.getenv('LOG_DIR', 'logs'))
 PROCESSED_DATA_DIR = os.path.join(RUN_DIR, os.getenv('PROCESSED_DATA_DIR', 'processed_data'))
-PIPELINE_STATE_FILE = os.path.join(RUN_DIR, os.getenv('PIPELINE_STATE_FILE', 'pipeline_state.json'))
 
 
 # Logging
@@ -68,24 +67,16 @@ def get_logger(name: str, file_name: str = None):
     logger.addHandler(stream_handler)
 
     # File handler
-    file_handler = logging.FileHandler(os.path.join(LOG_DIR, f'{file_name}.log' if file_name is not None else 'pipeline.log'))
+    file_handler = logging.FileHandler(
+        os.path.join(
+            LOG_DIR,
+            f'{file_name}.log' if file_name is not None else f'{datetime.now().strftime("%y%m%d-%H%M%S")}.log')
+    )
     file_handler.setLevel(LOG_LEVEL_FILE)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
     return logger
-
-
-def save_pipeline_state(state: dict):
-    with open(PIPELINE_STATE_FILE, 'w') as file:
-        json.dump(state, file)
-
-
-def get_pipeline_state():
-    with open(PIPELINE_STATE_FILE, 'r') as file:
-        state = json.load(file)
-
-    return state
 
 
 def create_dirs():
@@ -103,48 +94,6 @@ def create_dirs():
         os.makedirs(LOG_DIR)
     if not os.path.exists(PROCESSED_DATA_DIR):
         os.makedirs(PROCESSED_DATA_DIR)
-
-
-def clear_pipeline_state():
-    """ Clear the pipeline state and all pipeline data. """
-    for file in os.listdir(PROCESSED_DATA_DIR):
-        os.remove(os.path.join(PROCESSED_DATA_DIR, file))
-    for file in os.listdir(LOG_DIR):
-        os.remove(os.path.join(LOG_DIR, file))
-    os.remove(PIPELINE_STATE_FILE)
-    init_pipeline_state()
-
-
-def init_pipeline_state():
-    state = {
-        'prepare_pipeline': {
-            'state': 'not_started'
-        },
-        'embed_datasets': {
-            'embed_nodes': {
-                'state': 'not_started',
-                'progress': 0
-            },
-            'embed_edges': {
-                'state': 'not_started',
-                'progress': 0
-            }
-        },
-        'populate_db': {
-            'nodes': 'not_started',
-            'edges': 'not_started'
-        },
-        'train_model': {
-            'state': 'not_started'
-        },
-        'evaluate_model': {
-            'state': 'not_started'
-        },
-        'run_id': RUN_ID
-    }
-
-    with open(PIPELINE_STATE_FILE, 'w') as file:
-        json.dump(state, file, indent=4)
 
 
 def print_config():
@@ -175,13 +124,3 @@ def print_config():
 
     print(f"\n=== End Configuration =============================\n")
 
-
-def init():
-    # Initial setup
-    create_dirs()
-
-    # Generate pipeline state for the current run
-    if not os.path.exists(PIPELINE_STATE_FILE):
-        init_pipeline_state()
-
-    print_config()

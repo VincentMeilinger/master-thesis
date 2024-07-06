@@ -88,5 +88,29 @@ class WhoIsWhoDataset(Dataset):
             }
             db.merge_node("Publication", pub_id, pub_data)
 
+    @staticmethod
+    def parse_valid():
+        """ Parse the WhoIsWho validation dataset. """
+        file_path = os.path.join(config.DATASET_DIR, 'IND-WhoIsWho/ind_valid_author.json')
 
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File {file_path} not found.")
+
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+
+        return data
+
+    @staticmethod
+    def parse_train():
+        """ Parse the WhoIsWho test dataset. """
+        file_path = os.path.join(config.DATASET_DIR, 'IND-WhoIsWho/train_author.json')
+
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File {file_path} not found.")
+
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+
+        return data
 
