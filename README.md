@@ -2,7 +2,14 @@
 # Master Thesis on Author Disambiguation (AND) on public domain Knowledge Graphs
 This repository contains the code and the data used for the experiments in the master thesis on AND on public domain Knowledge Graphs.
 
-
+## Ideas
+- **The Knowledge Graph:** Construct a KG from all publications and authors in the data. Prior knowledge can be incorporated by creating "unbreakable" links between authors and their publications.
+- **Node Embedding:** Generate embeddings for the nodes in the KG.
+  - **Paper Embedding:** Train a link prediction model (e.g. DistMult) using a GAT layer to incorporate structural information to create embeddings for publications based on co-author network, citation network, ...
+  - **Author Embedding:** Use a GAT to create embeddings for authors based on co-author network, publication network, ...
+- **Step 1:** Create links between publications and their potential authors using the translational model. Sever the links between authors and publications that are likely not correct.
+- **Step 2:** Create links between authors that are likely very similar.
+- 
 ## Research Questions
 The research questions addressed in this thesis are:
 - How can Graph Learning methods be effectively used on the inherently heterogeneous public domain publication
