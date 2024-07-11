@@ -1,10 +1,11 @@
 import os
 import json
 import pandas as pd
+import uuid
 
 from .dataset import Dataset
 from ..shared import config
-from ..shared.rdf_terms import RdfTerms
+from ..shared.rdf_terms import PublicationRDF, AuthorRDF
 from ..shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("Dataset")
@@ -35,19 +36,18 @@ class WhoIsWhoDataset(Dataset):
         triples = []
         # Iterate over each paper
         for paper_id, paper_info in data.items():
-            triples.append((paper_id, RdfTerms.IDENTIFIER, paper_info['id']))
-            triples.append((paper_id, RdfTerms.TITLE, paper_info['title']))
-            triples.append((paper_id, RdfTerms.ABSTRACT, paper_info['abstract']))
-            triples.append((paper_id, RdfTerms.VENUE, paper_info['venue']))
-            triples.append((paper_id, RdfTerms.YEAR, paper_info['year']))
+            triples.append((paper_id, PublicationRDF.IDENTIFIER, paper_info['id']))
+            triples.append((paper_id, PublicationRDF.TITLE, paper_info['title']))
+            triples.append((paper_id, PublicationRDF.ABSTRACT, paper_info['abstract']))
+            triples.append((paper_id, PublicationRDF.VENUE, paper_info['venue']))
+            triples.append((paper_id, PublicationRDF.YEAR_PUBLISHED, paper_info['year']))
 
             for author in paper_info['authors']:
-                triples.append((paper_id, RdfTerms.CREATOR, author['name']))
-                triples.append((author['name'], RdfTerms.NAME, author['name']))
-                triples.append((author['name'], RdfTerms.ORGANIZATION, author['org']))
+                triples.append((paper_id, PublicationRDF.AUTHOR, author['name']))
+                triples.append((author['name'], AuthorRDF.ORGANIZATION, author['org']))
 
             for keyword in paper_info['keywords']:
-                triples.append((paper_id, RdfTerms.KEYWORD, keyword))
+                triples.append((paper_id, PublicationRDF.KEYWORD, keyword))
 
         df = pd.DataFrame(triples, columns=['h', 'r', 't'])
         return df
@@ -113,4 +113,41 @@ class WhoIsWhoDataset(Dataset):
             data = json.load(file)
 
         return data
+
+    def parse_graph(self):
+        node_data = self.parse(format='dict')
+        true_authors = self.parse_train()
+
+        authors = []
+        publications = []
+        orgs = set()
+        edges = set()
+        for author_id, values in node_data.items():
+            pub_authors = values.pop('authors')
+
+            # Publication node
+            publications.append(values)
+
+            for pub_author in pub_authors:
+                author_node = {
+                    'id': uuid.uuid4(),
+                    'name': pub_author['name']
+                }
+                org_node = pub_author['org']
+
+                # Author node
+                authors.append(author_node)
+                # Organization node
+                orgs.add(org_node)
+
+                # Author -> Organization
+                edges.add((author_node['id'], AuthorRDF.ORGANIZATION, org_node))
+                # Author -> Publication
+                edges.add((author_node['id'], AuthorRDF.PUBLICATION, values['id']))
+                # Publication -> Author
+                edges.add((values['id'], PublicationRDF.AUTHOR, author_node['id']))
+
+        for author_id, values in true_authors.items():
+
+
 

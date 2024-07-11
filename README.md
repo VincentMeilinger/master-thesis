@@ -40,3 +40,22 @@ A Graph Attention Network (GAT) is used to generate embeddings for the nodes in 
 ## Pipeline
 
 **TODO:** This section will be updated when the pipeline design is finalized.
+
+### Base Pipeline
+
+- **1. Data Preprocessing:** Preprocess the data from the different sources into a unified format.
+- **2. Knowledge Graph Construction:**
+  - **2.1.** Construct a knowledge graph from the publications, authors, venues, authors and their organizations in the data.
+  - **2.2.** Incorporate prior knowledge by creating "unbreakable" links between authors and their publications.
+  - **2.3.** Create links between publications based on 'advanced' attribute similarity (e.g. using BERT embeddings).
+
+### Model Training Pipeline
+
+- **Steps 1 and 2:** See base pipeline.
+- **3. Training the GAT layer:** Pre-Train the GAT layer to generate embeddings for the nodes in the knowledge graph.
+- **4. Training the KGC model:** Train a KGC model to predict the links between publications and authors.
+
+### Author Disambiguation Pipeline
+
+- **Steps 1 and 2:** See base pipeline.
+- **3. Knowledge Graph Completion:** Use the trained KGC model to predict the links between publications and authors.
