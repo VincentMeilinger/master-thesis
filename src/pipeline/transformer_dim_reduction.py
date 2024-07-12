@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, models
 
 from ..shared import config
 from ..shared.run_config import RunConfig
-from ..shared.pipeline_state import PipelineState
+from ..shared.run_state import RunState
 from ..datasets.who_is_who import WhoIsWhoDataset
 
 logger = config.get_logger("EmbDimReduction")
@@ -62,16 +62,16 @@ def edr_eval(train, full_emb, new_dimension: int, model_name: str = "all-mpnet-b
 
 def prep_transformer():
     run_config = RunConfig(config.RUN_DIR)
-    state = PipelineState(config.RUN_ID, config.RUN_DIR)
+    state = RunState(config.RUN_ID, config.RUN_DIR)
 
-    if state.transformer_dim_reduction_state.state == 'completed':
+    if state.transformer_dim_reduction.state == 'completed':
         logger.info("Transformer dimensionality reduction already completed. Skipping ...")
         return
     logger.info("Adding a dense layer to the transformer model to reduce the embedding dimension ...")
 
     # Parse datasets
     abstracts = []
-    data = WhoIsWhoDataset.parse(format='dict')
+    data = WhoIsWhoDataset.parse_data()
 
     for paper_id, paper_info in data.items():
         abstracts.append(paper_info['abstract'])
@@ -104,5 +104,5 @@ def prep_transformer():
         new_dimension=run_config.transformer_dim_reduction.reduced_dim,
         model_name=run_config.transformer_dim_reduction.base_model
     )
-    state.transformer_dim_reduction_state.state = 'completed'
+    state.transformer_dim_reduction.state = 'completed'
     state.save()

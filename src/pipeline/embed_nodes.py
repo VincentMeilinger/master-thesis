@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 from ..shared import config
 from ..shared.run_config import RunConfig
-from ..shared.pipeline_state import PipelineState
+from ..shared.run_state import RunState
 from ..shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("EmbedNodes")
@@ -78,7 +78,7 @@ def embed_nodes():
     """ Process the WhoIsWho dataset. """
     # Check pipeline state
     logger.info("Embedding nodes in the neo4j graph ...")
-    state = PipelineState(config.RUN_ID, config.RUN_DIR)
+    state = RunState(config.RUN_ID, config.RUN_DIR)
 
     if state.embed_nodes.state == 'completed':
         logger.info("Datasets already embedded. Skipping ...")

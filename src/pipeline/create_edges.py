@@ -1,6 +1,6 @@
 from src.shared import config
 from src.shared.run_config import RunConfig
-from src.shared.pipeline_state import PipelineState
+from src.shared.run_state import RunState
 from src.shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("CreateEdges")
@@ -47,11 +47,8 @@ def create_edges():
     """
     run_config = RunConfig(config.RUN_DIR)
     db = DatabaseWrapper()
-    state = PipelineState(config.RUN_ID, config.RUN_DIR)
+    state = RunState(config.RUN_ID, config.RUN_DIR)
     if not state.create_edges.state == 'completed':
         create_emb_sim_edges(db, run_config)
         state.create_edges.state = 'completed'
         state.save()
-
-
-

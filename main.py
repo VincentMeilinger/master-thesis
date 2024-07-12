@@ -3,7 +3,7 @@ import argparse
 
 from src.shared import (
     config,
-    pipeline_state,
+    run_state,
     database_wrapper
 )
 from src.pipeline import (
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # Access the build argument
     if args.reset_state:
         logger.info("Resetting the pipeline state.")
-        pipeline_state.PipelineState(config.RUN_ID, config.RUN_DIR).reset()
+        run_state.RunState(config.RUN_ID, config.RUN_DIR).reset()
     if args.delete_db:
         logger.info("Deleting the Neo4j database.")
         db = database_wrapper.DatabaseWrapper()
@@ -121,4 +121,3 @@ if __name__ == '__main__':
     if args.eval:
         logger.info("Evaluating the AND model.")
         raise NotImplementedError
-

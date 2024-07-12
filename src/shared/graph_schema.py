@@ -1,7 +1,23 @@
 from enum import Enum
 
 
-class PublicationRDF(Enum):
+class GraphNode(Enum):
+    """
+    Enumeration of common Graph Node RDF terms used in the datasets.
+    """
+
+    PUBLICATION = "Publication"
+
+    AUTHOR = "Author"
+
+    TRUE_AUTHOR = "TrueAuthor"
+
+    ORGANIZATION = "Organization"
+
+    VENUE = "Venue"
+
+
+class PublicationEdge(Enum):
     """
     Enumeration of common Publication RDF terms used in the datasets.
     """
@@ -20,10 +36,12 @@ class PublicationRDF(Enum):
 
     AUTHOR = 6
 
-    CITES = 7
+    TRUE_AUTHOR = 7
+
+    CITES = 8
 
 
-class AuthorRDF(Enum):
+class AuthorEdge(Enum):
     """
     Enumeration of common Author RDF terms used in the datasets.
     """

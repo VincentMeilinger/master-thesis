@@ -9,8 +9,7 @@ class TransformerDimReductionState:
 
 class CreateNodesState:
     def __init__(self):
-        self.create_publication_nodes_state = 'not_started'
-        self.add_true_authors_state = 'not_started'
+        self.state = 'not_started'
 
 
 class EmbedNodesState:
@@ -33,7 +32,7 @@ class EvaluateGraphModelState:
         self.state = 'not_started'
 
 
-class PipelineState:
+class RunState:
     def __init__(self, run_id: str, run_path: str):
         self.run_id = run_id
         self.run_path = run_path
@@ -45,22 +44,19 @@ class PipelineState:
         self.train_graph_model = TrainGraphModelState()
         self.evaluate_graph_model = EvaluateGraphModelState()
 
-        try:
-            if not os.path.exists(os.path.join(self.run_path, 'pipeline_state.ini')):
-                raise Exception("Run configuration file not found.")
-            self.load()
-        except Exception as e:
+        if not os.path.exists(os.path.join(self.run_path, 'run_state.ini')):
             self.save()
+        else:
+            self.load()
 
     def load(self):
         config = configparser.ConfigParser()
-        config.read(os.path.join(self.run_path, 'run_config.ini'))
+        config.read(os.path.join(self.run_path, 'run_state.ini'))
 
-        self.run_id = config.get('run', 'run_id', fallback='not_started')
-        self.run_path = config.get('run', 'run_path', fallback='not_started')
+        self.run_id = config.get('run', 'run_id', fallback=self.run_id)
+        self.run_path = config.get('run', 'run_path', fallback=self.run_path)
         self.transformer_dim_reduction.state = config.get('transformer_dim_reduction', 'state', fallback='not_started')
-        self.create_nodes.create_publication_nodes_state = config.get('create_nodes', 'create_publication_nodes_state', fallback='not_started')
-        self.create_nodes.add_true_authors_state = config.get('create_nodes', 'add_true_authors_state', fallback='not_started')
+        self.create_nodes.state = config.get('create_nodes', 'state', fallback='not_started')
         self.embed_nodes.state = config.get('embed_nodes', 'state', fallback='not_started')
         self.create_edges.state = config.get('create_edges', 'state', fallback='not_started')
         self.train_graph_model.state = config.get('train_graph_model', 'state', fallback='not_started')
@@ -85,11 +81,11 @@ class PipelineState:
         config['train_graph_model'] = self.train_graph_model.__dict__
         config['evaluate_graph_model'] = self.evaluate_graph_model.__dict__
 
-        with open(os.path.join(self.run_path, 'pipeline_state.ini'), 'w') as configfile:
+        with open(os.path.join(self.run_path, 'run_state.ini'), 'w') as configfile:
             config.write(configfile)
 
     def reset(self):
-        os.remove(os.path.join(self.run_path, 'pipeline_state.ini'))
+        os.remove(os.path.join(self.run_path, 'run_state.ini'))
 
     def to_string(self):
         return self.__dict__

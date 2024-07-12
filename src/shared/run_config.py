@@ -51,7 +51,7 @@ class RunConfig:
         config = configparser.ConfigParser()
         config.read(os.path.join(self.run_path, 'run_config.ini'))
 
-        self.transformer_dim_reduction.model_name = config.get('transformer_dim_reduction', 'base_model', fallback='all-mpnet-base-v2')
+        self.transformer_dim_reduction.base_model = config.get('transformer_dim_reduction', 'base_model', fallback='all-mpnet-base-v2')
         self.transformer_dim_reduction.reduced_dim = config.getint('transformer_dim_reduction', 'reduced_dim', fallback=16)
         self.transformer_dim_reduction.num_pca_samples = config.getint('transformer_dim_reduction', 'num_pca_samples', fallback=10000)
 
