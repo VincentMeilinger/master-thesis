@@ -17,7 +17,7 @@ class EmbedNodesState:
         self.state = 'not_started'
 
 
-class CreateEdgesState:
+class LinkNodesState:
     def __init__(self):
         self.state = 'not_started'
 
@@ -40,7 +40,7 @@ class RunState:
         self.transformer_dim_reduction = TransformerDimReductionState()
         self.create_nodes = CreateNodesState()
         self.embed_nodes = EmbedNodesState()
-        self.create_edges = CreateEdgesState()
+        self.link_nodes = LinkNodesState()
         self.train_graph_model = TrainGraphModelState()
         self.evaluate_graph_model = EvaluateGraphModelState()
 
@@ -58,7 +58,7 @@ class RunState:
         self.transformer_dim_reduction.state = config.get('transformer_dim_reduction', 'state', fallback='not_started')
         self.create_nodes.state = config.get('create_nodes', 'state', fallback='not_started')
         self.embed_nodes.state = config.get('embed_nodes', 'state', fallback='not_started')
-        self.create_edges.state = config.get('create_edges', 'state', fallback='not_started')
+        self.link_nodes.state = config.get('link_nodes', 'state', fallback='not_started')
         self.train_graph_model.state = config.get('train_graph_model', 'state', fallback='not_started')
         self.evaluate_graph_model.state = config.get('evaluate_graph_model', 'state', fallback='not_started')
 
@@ -77,7 +77,7 @@ class RunState:
         config['transformer_dim_reduction'] = self.transformer_dim_reduction.__dict__
         config['create_nodes'] = self.create_nodes.__dict__
         config['embed_nodes'] = self.embed_nodes.__dict__
-        config['create_edges'] = self.create_edges.__dict__
+        config['create_edges'] = self.link_nodes.__dict__
         config['train_graph_model'] = self.train_graph_model.__dict__
         config['evaluate_graph_model'] = self.evaluate_graph_model.__dict__
 

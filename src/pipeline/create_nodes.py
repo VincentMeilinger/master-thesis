@@ -7,7 +7,7 @@ from ..datasets.who_is_who import WhoIsWhoDataset
 from ..shared.run_state import RunState
 from ..shared.database_wrapper import DatabaseWrapper
 
-logger = config.get_logger('PopulateDB')
+logger = config.get_logger('CreateKG')
 
 
 def create_nodes():

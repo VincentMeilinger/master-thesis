@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class GraphNode(Enum):
+class NodeType(Enum):
     """
     Enumeration of common Graph Node RDF terms used in the datasets.
     """
@@ -10,6 +10,8 @@ class GraphNode(Enum):
 
     AUTHOR = "Author"
 
+    CONTRIBUTOR = "Contributor"
+
     TRUE_AUTHOR = "TrueAuthor"
 
     ORGANIZATION = "Organization"
@@ -17,35 +19,40 @@ class GraphNode(Enum):
     VENUE = "Venue"
 
 
-class PublicationEdge(Enum):
+
+class EdgeType(Enum):
+    pass
+
+
+class PublicationEdge(EdgeType):
     """
     Enumeration of common Publication RDF terms used in the datasets.
     """
 
-    IDENTIFIER = 0
+    TITLE = "SimilarTitle"
 
-    TITLE = 1
+    ABSTRACT = "SimilarAbstract"
 
-    ABSTRACT = 2
+    KEYWORD = "SimilarKeyword"
 
-    KEYWORD = 3
+    VENUE = "Venue"
 
-    VENUE = 4
+    YEAR_PUBLISHED = "YearPublished"
 
-    YEAR_PUBLISHED = 5
+    AUTHOR = "Author"
 
-    AUTHOR = 6
+    CONTRIBUTOR = "Contributor"
 
-    TRUE_AUTHOR = 7
+    TRUE_AUTHOR = "TrueAuthor"
 
-    CITES = 8
+    CITES = "Cites"
 
 
-class AuthorEdge(Enum):
+class AuthorEdge(EdgeType):
     """
     Enumeration of common Author RDF terms used in the datasets.
     """
 
-    ORGANIZATION = 100
+    ORGANIZATION = "Organization"
 
-    PUBLICATION = 101
+    PUBLICATION = "Publication"

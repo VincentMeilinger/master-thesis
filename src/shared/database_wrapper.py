@@ -2,6 +2,7 @@ import pandas as pd
 from neo4j import GraphDatabase
 
 from src.shared import config
+from src.shared.graph_schema import NodeType, EdgeType
 
 logger = config.get_logger("DatabaseWrapper")
 
@@ -46,15 +47,15 @@ class DatabaseWrapper:
             """
             session.run(query)
 
-    def create_node(self, label, properties):
+    def create_node(self, type: NodeType, properties):
         with self.driver.session() as session:
             query = "CREATE (n:$label $props) RETURN n"
-            session.run(query, label=label, props=properties)
+            session.run(query, label=type.value, props=properties)
 
-    def merge_node(self, label: str, node_id: str, properties: dict = {}):
+    def merge_node(self, type: NodeType, node_id: str, properties: dict = {}):
         with self.driver.session() as session:
             query = f"""
-            MERGE (n:{label} {{id: $id}})
+            MERGE (n:{type.value} {{id: $id}})
             ON CREATE SET n += $properties
             ON MATCH SET n += $properties
             RETURN n
@@ -64,12 +65,12 @@ class DatabaseWrapper:
             if result.single() is None:
                 logger.error(f"Failed to create paper {node_id}")
 
-    def merge_edge(self, node_label_1, node_id_1: str, node_label_2, node_id_2: str, edge_label: str, properties: dict = {}):
+    def merge_edge(self, node_type_1: NodeType, node_id_1: str, node_type_2: NodeType, node_id_2: str, edge_type: EdgeType, properties: dict = {}):
         with self.driver.session() as session:
             query = f"""
-            MATCH (n1:{node_label_1} {{id: $id1}})
-            MATCH (n2:{node_label_2} {{id: $id2}})
-            MERGE (n1)-[r:{edge_label}]-(n2)
+            MATCH (n1:{node_type_1.value} {{id: $id1}})
+            MATCH (n2:{node_type_2.value} {{id: $id2}})
+            MERGE (n1)-[r:{edge_type.value}]-(n2)
             ON CREATE SET r += $properties
             ON MATCH SET r += $properties
             RETURN r
