@@ -5,7 +5,7 @@ import uuid
 
 from .dataset import Dataset
 from ..shared import config
-from ..shared.graph_schema import GraphNode, PublicationEdge, AuthorEdge
+from ..shared.graph_schema import NodeType, PublicationEdge, AuthorEdge
 from ..shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("Dataset")
@@ -75,13 +75,13 @@ class WhoIsWhoDataset(Dataset):
             venue = values.pop('venue')
 
             # Publication node
-            db.merge_node(GraphNode.PUBLICATION, values['id'], values)
+            db.merge_node(NodeType.PUBLICATION, values['id'], values)
 
             if venue:
                 # Venue node
-                db.merge_node(GraphNode.VENUE, venue, {})
+                db.merge_node(NodeType.VENUE, venue, {})
                 # Publication -> Venue
-                db.merge_edge(GraphNode.PUBLICATION, values['id'], GraphNode.VENUE, venue, PublicationEdge.VENUE)
+                db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.VENUE, venue, PublicationEdge.VENUE)
 
             for ix, pub_author in enumerate(pub_authors):
                 if not pub_author['name']:
@@ -94,19 +94,19 @@ class WhoIsWhoDataset(Dataset):
 
                 # Author node
                 if ix==0:
-                    db.merge_node(GraphNode.AUTHOR, author_node['id'], author_node)
+                    db.merge_node(NodeType.AUTHOR, author_node['id'], author_node)
                 else:
-                    db.merge_node(GraphNode.CONTRIBUTOR, author_node['id'], author_node)
+                    db.merge_node(NodeType.CONTRIBUTOR, author_node['id'], author_node)
                 # Author -> Publication
-                db.merge_edge(GraphNode.AUTHOR, author_node['id'], GraphNode.PUBLICATION, values['id'], AuthorEdge.PUBLICATION)
+                db.merge_edge(NodeType.AUTHOR, author_node['id'], NodeType.PUBLICATION, values['id'], AuthorEdge.PUBLICATION)
                 # Publication -> Author
-                db.merge_edge(GraphNode.PUBLICATION, values['id'], GraphNode.AUTHOR, author_node['id'], PublicationEdge.AUTHOR)
+                db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.AUTHOR, author_node['id'], PublicationEdge.AUTHOR)
 
                 if pub_author['org']:
                     # Organization node
-                    db.merge_node(GraphNode.ORGANIZATION, pub_author['org'])
+                    db.merge_node(NodeType.ORGANIZATION, pub_author['org'])
                     # Author -> Organization
-                    db.merge_edge(GraphNode.AUTHOR, author_node['id'], GraphNode.ORGANIZATION, pub_author['org'], AuthorEdge.ORGANIZATION)
+                    db.merge_edge(NodeType.AUTHOR, author_node['id'], NodeType.ORGANIZATION, pub_author['org'], AuthorEdge.ORGANIZATION)
 
         logger.info("Merging true author data into database ...")
         for author_id, values in true_author_data.items():
@@ -116,10 +116,10 @@ class WhoIsWhoDataset(Dataset):
             }
 
             # True Author node
-            db.merge_node(GraphNode.TRUE_AUTHOR, true_author_node['id'], true_author_node)
+            db.merge_node(NodeType.TRUE_AUTHOR, true_author_node['id'], true_author_node)
 
             for pub_id in values['normal_data']:
                 # Publication -> True Author
-                db.merge_edge(GraphNode.PUBLICATION, pub_id, GraphNode.TRUE_AUTHOR, true_author_node['id'], PublicationEdge.TRUE_AUTHOR)
+                db.merge_edge(NodeType.PUBLICATION, pub_id, NodeType.TRUE_AUTHOR, true_author_node['id'], PublicationEdge.TRUE_AUTHOR)
 
         logger.info("Finished merging WhoIsWho dataset.")

@@ -4,8 +4,8 @@ import os
 
 class TransformerDimReductionConfig:
     def __init__(self):
-        self.base_model = "all-mpnet-base-v2"
-        self.reduced_dim = 16
+        self.base_model = "jordyvl/scibert_scivocab_uncased_sentence_transformer"
+        self.reduced_dim = 32
         self.num_pca_samples = 10000
 
 
@@ -16,13 +16,13 @@ class CreateNodesConfig:
         self.max_seq_len = 256
 
 
-class EmbedDatasetsConfig:
+class EmbedNodesConfig:
     def __init__(self):
-        self.transformer_model = "./data/models/all-mpnet-base-v2-16dim"
+        self.transformer_model = "./data/models/jordyvl/scibert_scivocab_uncased_sentence_transformer-16dim"
         self.batch_size = 10000
 
 
-class CreateEdgesConfig:
+class LinkNodesConfig:
     def __init__(self):
         self.batch_size = 10000
         self.similarity_threshold = 0.95
@@ -34,8 +34,8 @@ class RunConfig:
         self.run_path = run_path
         self.transformer_dim_reduction = TransformerDimReductionConfig()
         self.create_nodes = CreateNodesConfig()
-        self.embed_datasets = EmbedDatasetsConfig()
-        self.create_edges = CreateEdgesConfig()
+        self.embed_nodes = EmbedNodesConfig()
+        self.link_nodes = LinkNodesConfig()
 
         try:
             if not os.path.exists(os.path.join(self.run_path, 'run_config.ini')):
@@ -59,12 +59,12 @@ class RunConfig:
         self.create_nodes.max_nodes = config.getint('populate_db', 'max_nodes', fallback=0)
         self.create_nodes.max_seq_len = config.getint('populate_db', 'max_seq_len', fallback=256)
 
-        self.embed_datasets.transformer_model = config.get('embed_datasets', 'transformer_model', fallback='./data/models/all-mpnet-base-v2-16dim')
-        self.embed_datasets.batch_size = config.getint('embed_datasets', 'batch_size', fallback=1000)
+        self.embed_nodes.transformer_model = config.get('embed_datasets', 'transformer_model', fallback='./data/models/all-mpnet-base-v2-16dim')
+        self.embed_nodes.batch_size = config.getint('embed_datasets', 'batch_size', fallback=1000)
 
-        self.create_edges.batch_size = config.getint('create_edges', 'batch_size', fallback=1000)
-        self.create_edges.similarity_threshold = config.getfloat('create_edges', 'similarity_threshold', fallback=0.95)
-        self.create_edges.k_nearest_limit = config.getint('create_edges', 'k_nearest_limit', fallback=10)
+        self.link_nodes.batch_size = config.getint('create_edges', 'batch_size', fallback=1000)
+        self.link_nodes.similarity_threshold = config.getfloat('create_edges', 'similarity_threshold', fallback=0.95)
+        self.link_nodes.k_nearest_limit = config.getint('create_edges', 'k_nearest_limit', fallback=10)
 
     def save(self):
         config = configparser.ConfigParser()
@@ -76,8 +76,8 @@ class RunConfig:
         config.add_section('evaluate_graph_model')
         config['transformer_dim_reduction'] = self.transformer_dim_reduction.__dict__
         config['populate_db'] = self.create_nodes.__dict__
-        config['embed_datasets'] = self.embed_datasets.__dict__
-        config['create_edges'] = self.create_edges.__dict__
+        config['embed_datasets'] = self.embed_nodes.__dict__
+        config['create_edges'] = self.link_nodes.__dict__
 
         with open(os.path.join(self.run_path, 'run_config.ini'), 'w') as configfile:
             config.write(configfile)

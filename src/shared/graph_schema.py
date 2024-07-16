@@ -23,6 +23,15 @@ class NodeType(Enum):
 class EdgeType(Enum):
     pass
 
+class SimilarityEdge(EdgeType):
+    SIM_ORG = "SimilarOrganization"
+    SIM_VENUE = "SimilarVenue"
+    SIM_TITLE = "SimilarTitle"
+    SIM_ABSTRACT = "SimilarAbstract"
+    SIM_KEYWORD = "SimilarKeyword"
+    SIM_YEAR = "SimilarYear"
+    SIM_AUTHOR = "SimilarAuthor"
+
 
 class PublicationEdge(EdgeType):
     """

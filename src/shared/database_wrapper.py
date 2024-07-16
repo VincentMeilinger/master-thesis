@@ -1,5 +1,6 @@
 import pandas as pd
 from neo4j import GraphDatabase
+from typing import List, Dict, Any
 
 from src.shared import config
 from src.shared.graph_schema import NodeType, EdgeType
@@ -17,19 +18,19 @@ class DatabaseWrapper:
 
         # Create database indexes
         self.create_index("idIndex", "Publication", "id")
-        self.create_vector_index("abstractEmbIndex", "Publication", "abstract_emb", 16)
-        self.create_vector_index("titleEmbIndex", "Publication", "title_emb", 16)
+        self.create_vector_index("abstractEmbIndex", NodeType.PUBLICATION, "abstract_emb", 16)
+        self.create_vector_index("titleEmbIndex", NodeType.PUBLICATION, "title_emb", 16)
 
         logger.info("Database ready.")
 
-    def create_vector_index(self, index, label, key, dimensions):
+    def create_vector_index(self, index_name: str, node_type: NodeType, attr_key: str, dimensions):
         logger.debug(
-            f"Creating vector index '{index}' for label '{label}' on key '{key}' with '{dimensions}' dimensions.")
+            f"Creating vector index '{index_name}' for label '{node_type.value}' on key '{attr_key}' with '{dimensions}' dimensions.")
         with self.driver.session() as session:
             query = f"""
-            CREATE VECTOR INDEX {index} IF NOT EXISTS
-            FOR (n:{label})
-            ON n.{key}
+            CREATE VECTOR INDEX {index_name} IF NOT EXISTS
+            FOR (n:{node_type.value})
+            ON n.{attr_key}
             OPTIONS {{indexConfig: {{
              `vector.dimensions`: {dimensions},
              `vector.similarity_function`: 'cosine'
@@ -65,20 +66,41 @@ class DatabaseWrapper:
             if result.single() is None:
                 logger.error(f"Failed to create paper {node_id}")
 
-    def merge_edge(self, node_type_1: NodeType, node_id_1: str, node_type_2: NodeType, node_id_2: str, edge_type: EdgeType, properties: dict = {}):
+    def merge_nodes(self, type: NodeType, nodes: List[Dict[str, Any]]):
+        assert "id" in nodes[0] and "properties" in nodes[0], "Nodes should be a list of dictionaries with 'id' and 'properties' keys"
         with self.driver.session() as session:
             query = f"""
-            MATCH (n1:{node_type_1.value} {{id: $id1}})
-            MATCH (n2:{node_type_2.value} {{id: $id2}})
-            MERGE (n1)-[r:{edge_type.value}]-(n2)
-            ON CREATE SET r += $properties
-            ON MATCH SET r += $properties
-            RETURN r
+            UNWIND $nodes AS node
+            MERGE (n:{type.value} {{id: node.id}})
+            ON CREATE SET n += node.properties
+            ON MATCH SET n += node.properties
+            RETURN n
             """
-            result = session.run(query, id1=node_id_1, id2=node_id_2, properties=properties)
+            result = session.run(query, nodes=nodes)
 
+            # Handling the results or logging errors
             if result.single() is None:
-                logger.error(f"Failed to create edge between {node_id_1} and {node_id_2}")
+                logger.error("Failed to merge nodes")
+            else:
+                logger.info("Nodes merged successfully")
+
+    def merge_edge(self, node_type_1: NodeType, node_id_1: str, node_type_2: NodeType, node_id_2: str, edge_type: EdgeType, properties: dict = {}):
+        try:
+            with self.driver.session() as session:
+                query = f"""
+                MATCH (n1:{node_type_1.value} {{id: $id1}})
+                MATCH (n2:{node_type_2.value} {{id: $id2}})
+                MERGE (n1)-[r:{edge_type.value}]-(n2)
+                ON CREATE SET r += $properties
+                ON MATCH SET r += $properties
+                RETURN r
+                """
+                result = session.run(query, id1=node_id_1, id2=node_id_2, properties=properties)
+
+                if result.single() is None:
+                    logger.error(f"Failed to create edge between {node_id_1} and {node_id_2}")
+        except Exception as e:
+            logger.exception(f"Failed to create edge between {node_id_1} and {node_id_2}")
 
     def iterate_all_papers(self, batch_size: int):
         with self.driver.session() as session:
@@ -97,6 +119,31 @@ class DatabaseWrapper:
                     break
 
                 yield nodes
+                offset += batch_size
+
+    def iter_nodes(self, node_type: NodeType, attr_keys: List[str] = [], batch_size: int=config.DB_BATCH_SIZE):
+        props = ", ".join([f"n.{key} AS {key}" for key in attr_keys])
+        with self.driver.session() as session:
+            offset = 0
+            if props:
+                query = f"""
+                MATCH (n:{node_type.value})
+                RETURN {props}
+                SKIP $offset LIMIT $batch_size
+                """
+            else:
+                query = f"""
+                MATCH (n:{node_type.value})
+                RETURN n
+                SKIP $offset LIMIT $batch_size
+                """
+            while True:
+                result = session.run(query, offset=offset, batch_size=batch_size).data()
+
+                if not result:
+                    break
+
+                yield result
                 offset += batch_size
 
     def iterate_all_papers_get_properties(self, label: str, keys: list, batch_size: int):
@@ -129,12 +176,12 @@ class DatabaseWrapper:
             result = session.run(query).data()
             return pd.DataFrame(result)
 
-    def get_similar_nodes_vec(self, label, key, vector, thresh, k) -> pd.DataFrame:
+    def get_similar_nodes_vec(self, node_type: NodeType, vec_attr: str, vector, thresh, k) -> pd.DataFrame:
         with self.driver.session() as session:
             query = f"""
-            MATCH (n:{label})
-            WHERE gds.similarity.cosine(n.{key}, $vector) > {thresh}
-            RETURN n.id AS id, gds.similarity.cosine(n.{key}, $vector) AS sim
+            MATCH (n:{node_type.value})
+            WHERE gds.similarity.cosine(n.{vec_attr}, $vector) > {thresh}
+            RETURN n.id AS id, gds.similarity.cosine(n.{vec_attr}, $vector) AS sim
             LIMIT $k
             """
             result = session.run(query, vector=vector, k=k).data()

@@ -7,6 +7,8 @@ from ..shared import config
 from ..shared.run_config import RunConfig
 from ..shared.run_state import RunState
 from ..shared.database_wrapper import DatabaseWrapper
+from ..shared.graph_schema import NodeType, EdgeType
+from src.shared import run_config
 
 logger = config.get_logger("EmbedNodes")
 
@@ -73,21 +75,46 @@ def create_node_embeddings_batch(state: dict):
 
         logger.info(f"Batch processed in {time() - start_time:.2f} seconds.")
 
+def embed_string_attr(run_config: RunConfig, model: SentenceTransformer, db: DatabaseWrapper, node_type: NodeType, attr_key: str):
+    emb_attr_key = f"{attr_key}_emb"
+    db.create_vector_index(emb_attr_key, node_type, emb_attr_key, run_config.transformer_dim_reduction.reduced_dim)
+    for nodes in db.iter_nodes(node_type, [attr_key]):
+        logger.debug(f"Embedding {len(nodes)} {node_type.value} nodes ...")
+        strings = [node[attr_key] for node in nodes]
+        embeddings = model.encode(strings)
+        merge_nodes = []
+        for node_id, emb in zip(strings, embeddings):
+            merge_nodes.append(
+                {'id': node_id, 'properties': {f'{emb_attr_key}': emb.tolist()}}
+            )
+        db.merge_nodes(node_type, merge_nodes)
 
 def embed_nodes():
     """ Process the WhoIsWho dataset. """
     # Check pipeline state
     logger.info("Embedding nodes in the neo4j graph ...")
-    state = RunState(config.RUN_ID, config.RUN_DIR)
+    run_state = RunState(config.RUN_ID, config.RUN_DIR)
+    run_config = RunConfig(config.RUN_DIR)
 
-    if state.embed_nodes.state == 'completed':
+    if run_state.embed_nodes.state == 'completed':
         logger.info("Datasets already embedded. Skipping ...")
         return
 
-    # Embed nodes
-    create_node_embeddings_batch(state)
-    state.embed_nodes.state = 'completed'
-    state.save()
+    db = DatabaseWrapper()
+
+    model = SentenceTransformer(
+        'jordyvl/scibert_scivocab_uncased_sentence_transformer',
+        device=config.DEVICE
+    )
+
+    # Embed Organization nodes
+    embed_string_attr(run_config, model, db, NodeType.ORGANIZATION, 'id')
+    # Emebed Venue nodes
+    embed_string_attr(run_config, model, db, NodeType.VENUE, 'id')
+
+    #create_node_embeddings_batch(run_state)
+    run_state.embed_nodes.state = 'completed'
+    run_state.save()
 
 
 if __name__ == '__main__':

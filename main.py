@@ -12,7 +12,7 @@ from src.pipeline import (
     create_nodes,
     dataset_pre_processing,
     train_gat,
-    create_edges
+    link_nodes
 )
 
 if __name__ == '__main__':
@@ -40,7 +40,7 @@ if __name__ == '__main__':
         help='Set to True to print dataset statistics.'
     )
     parser.add_argument(
-        '--embed_publications', '-embed',
+        '--embed_nodes', '-embed',
         action='store_true',
         help='Set to True to create publication node embeddings.'
     )
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         help='Set to True to populate the Neo4j database.'
     )
     parser.add_argument(
-        '--edges', '-edges',
+        '--link_nodes', '-link',
         action='store_true',
         help='Set to True to create the edges of the neo4j KG.'
     )
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         dataset_pre_processing.dataset_pre_processing()
         create_nodes.create_nodes()
         embed_nodes.embed_nodes()
-        create_edges.create_edges()
+        link_nodes.link_nodes()
         train_gat.train_gat()
         exit(0)
 
@@ -109,12 +109,12 @@ if __name__ == '__main__':
     if args.populate_neo:
         logger.info("Populating the Neo4j database.")
         create_nodes.create_nodes()
-    if args.embed_publications:
+    if args.embed_nodes:
         logger.info("Embedding publications.")
         embed_nodes.embed_nodes()
-    if args.edges:
+    if args.link_nodes:
         logger.info("Creating the edges of the Neo4j KG.")
-        create_edges.create_edges()
+        link_nodes.link_nodes()
     if args.train:
         logger.info("Training the AND model.")
         train_gat.train_gat()

@@ -17,6 +17,7 @@ if not secret_env:
 DB_URI = os.getenv('DB_URI')
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_BATCH_SIZE = int(os.getenv('DB_BATCH_SIZE', 1000))
 
 # Transformer
 MAX_SEQ_LEN = int(os.getenv('MAX_SEQ_LEN', 256))
@@ -123,4 +124,3 @@ def print_config():
     print(f"    - Device:                   {DEVICE.type}")
 
     print(f"\n=== End Configuration =============================\n")
-
