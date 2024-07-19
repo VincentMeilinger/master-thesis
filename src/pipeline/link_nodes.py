@@ -28,8 +28,11 @@ def link_node_attr_cosine(run_config: RunConfig, db: DatabaseWrapper, node_type:
                 run_config.link_nodes.similarity_threshold,
                 run_config.link_nodes.k_nearest_limit
             )
-            for node in similar_nodes:
-                db.create_edge(node_type, node_type, node[0], node[0], edge_type, node[1])
+            for ix, row in similar_nodes.iterrows():
+                if row['id'] == node['id']:
+                    continue
+                print(f"Similarity {row['sim']} between \n{node['name']}\n{row['name']}")
+                db.merge_edge(node_type, node['id'], node_type, row['id'], edge_type, {"sim": row['sim']})
 
 def link_nodes():
     """Create edges between nodes in the graph database based on author, venue, and keyword similarity.
@@ -41,8 +44,8 @@ def link_nodes():
 
     if run_state.link_nodes.state == 'not_started':
         logger.info("Creating edges between nodes ...")
-        link_node_attr_cosine(run_config, db, NodeType.ORGANIZATION, 'id_emb', SimilarityEdge.SIM_ORG)
-        link_node_attr_cosine(run_config, db, NodeType.VENUE, 'id_emb', SimilarityEdge.SIM_VENUE)
+        link_node_attr_cosine(run_config, db, NodeType.ORGANIZATION, 'name_emb', SimilarityEdge.SIM_ORG)
+        link_node_attr_cosine(run_config, db, NodeType.VENUE, 'name_emb', SimilarityEdge.SIM_VENUE)
         run_state.link_nodes.state = 'completed'
         run_state.save()
         logger.info("Done.")

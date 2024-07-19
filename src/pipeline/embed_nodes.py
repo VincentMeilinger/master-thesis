@@ -108,9 +108,9 @@ def embed_nodes():
     )
 
     # Embed Organization nodes
-    embed_string_attr(run_config, model, db, NodeType.ORGANIZATION, 'id')
+    embed_string_attr(run_config, model, db, NodeType.ORGANIZATION, 'name')
     # Emebed Venue nodes
-    embed_string_attr(run_config, model, db, NodeType.VENUE, 'id')
+    embed_string_attr(run_config, model, db, NodeType.VENUE, 'name')
 
     #create_node_embeddings_batch(run_state)
     run_state.embed_nodes.state = 'completed'

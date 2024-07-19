@@ -78,8 +78,13 @@ class WhoIsWhoDataset(Dataset):
             db.merge_node(NodeType.PUBLICATION, values['id'], values)
 
             if venue:
+                venue_node = {
+                    'id': str(uuid.uuid4()),
+                    'name': venue
+                }
+
                 # Venue node
-                db.merge_node(NodeType.VENUE, venue, {})
+                db.merge_node(NodeType.VENUE, venue_node['id'], venue_node)
                 # Publication -> Venue
                 db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.VENUE, venue, PublicationEdge.VENUE)
 
@@ -103,8 +108,13 @@ class WhoIsWhoDataset(Dataset):
                 db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.AUTHOR, author_node['id'], PublicationEdge.AUTHOR)
 
                 if pub_author['org']:
+                    org_node = {
+                        'id': str(uuid.uuid4()),
+                        'name': pub_author['org']
+                    }
+
                     # Organization node
-                    db.merge_node(NodeType.ORGANIZATION, pub_author['org'])
+                    db.merge_node(NodeType.ORGANIZATION, org_node['id'], org_node)
                     # Author -> Organization
                     db.merge_edge(NodeType.AUTHOR, author_node['id'], NodeType.ORGANIZATION, pub_author['org'], AuthorEdge.ORGANIZATION)
 
