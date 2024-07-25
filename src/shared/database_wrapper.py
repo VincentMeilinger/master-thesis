@@ -187,6 +187,24 @@ class DatabaseWrapper:
             result = session.run(query, vector=vector, k=k).data()
             return pd.DataFrame(result)
 
+    def fetch_neighborhood(self, start_id, depth):
+        with self.driver.session() as session:
+            result = session.run(
+                """
+                MATCH path = (startNode {id: $startId})-[*1..$depth]-(neighbor)
+                RETURN nodes(path) AS nodes, relationships(path) AS relationships
+                """,
+                startId=start_id, depth=depth)
+
+            nodes_list = []
+            relationships_list = []
+
+            for record in result:
+                nodes_list.extend(record["nodes"])
+                relationships_list.extend(record["relationships"])
+
+        return nodes_list, relationships_list
+
     def delete_all_nodes(self):
         try:
             with self.driver.session() as session:
