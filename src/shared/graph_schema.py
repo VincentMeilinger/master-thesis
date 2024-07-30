@@ -10,7 +10,7 @@ class NodeType(Enum):
 
     AUTHOR = "Author"
 
-    CONTRIBUTOR = "Contributor"
+    CO_AUTHOR = "CoAuthor"
 
     TRUE_AUTHOR = "TrueAuthor"
 

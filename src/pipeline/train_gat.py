@@ -3,7 +3,7 @@ import pandas as pd
 from graphdatascience import GraphDataScience
 
 from src.shared import config
-from src.shared.run_state import RunState
+import src.shared.run_state
 from src.shared.run_config import RunConfig
 from src.model.GAT.gat_encoder import GATEncoder
 from src.shared.database_wrapper import DatabaseWrapper
@@ -11,7 +11,7 @@ from src.shared.database_wrapper import DatabaseWrapper
 logger = config.get_logger("TrainGAT")
 
 def prepare_data(run_config: RunConfig):
-
+    pass
 
 def train_gat():
     run_state = RunState(config.RUN_ID, config.RUN_DIR)

@@ -83,7 +83,10 @@ if __name__ == '__main__':
     # Access the build argument
     if args.reset_state:
         logger.info("Resetting the pipeline state.")
-        run_state.RunState(config.RUN_ID, config.RUN_DIR).reset()
+        run_state.reset()
+
+    run_state.load(config.RUN_ID, config.RUN_DIR)
+
     if args.delete_db:
         logger.info("Deleting the Neo4j database.")
         db = database_wrapper.DatabaseWrapper()

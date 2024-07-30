@@ -10,7 +10,6 @@ logger = config.get_logger("DatabaseWrapper")
 
 class DatabaseWrapper:
     def __init__(self):
-
         logger.info("Connecting to the database ...")
         logger.debug(f"URI: {config.DB_URI}")
         logger.debug(f"User: {config.DB_USER}")
@@ -101,6 +100,7 @@ class DatabaseWrapper:
                     logger.error(f"Failed to create edge between {node_id_1} and {node_id_2}")
         except Exception as e:
             logger.exception(f"Failed to create edge between {node_id_1} and {node_id_2}")
+            logger.exception(e)
 
     def iterate_all_papers(self, batch_size: int):
         with self.driver.session() as session:
@@ -187,14 +187,17 @@ class DatabaseWrapper:
             result = session.run(query, vector=vector, k=k).data()
             return pd.DataFrame(result)
 
-    def fetch_neighborhood(self, start_id, depth):
+    def fetch_neighborhood(self, start_node_type: NodeType, start_node_id: str, max_level: int):
         with self.driver.session() as session:
-            result = session.run(
+            query = f"""
+                    MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
+                    CALL apoc.path.subgraphAll(start, {{
+                      maxLevel: {max_level},
+                      relationshipFilter: '>'
+                    }}) YIELD nodes, relationships
+                    RETURN nodes, relationships
                 """
-                MATCH path = (startNode {id: $startId})-[*1..$depth]-(neighbor)
-                RETURN nodes(path) AS nodes, relationships(path) AS relationships
-                """,
-                startId=start_id, depth=depth)
+            result = session.run(query)
 
             nodes_list = []
             relationships_list = []

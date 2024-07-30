@@ -1,6 +1,6 @@
 import os
 import json
-import pandas as pd
+import mmh3
 import uuid
 
 from .dataset import Dataset
@@ -60,7 +60,7 @@ class WhoIsWhoDataset(Dataset):
     def parse_graph(max_iterations: int = None):
         logger.info("Parsing WhoIsWho dataset, merging data into database ...")
         db = DatabaseWrapper()
-        node_data= WhoIsWhoDataset.parse_data()
+        node_data = WhoIsWhoDataset.parse_data()
         true_author_data = WhoIsWhoDataset.parse_train()
 
         logger.info("Merging file 'pid_to_info_all.json' ...")
@@ -79,14 +79,14 @@ class WhoIsWhoDataset(Dataset):
 
             if venue:
                 venue_node = {
-                    'id': str(uuid.uuid4()),
+                    'id': str(mmh3.hash(venue)),
                     'name': venue
                 }
 
                 # Venue node
                 db.merge_node(NodeType.VENUE, venue_node['id'], venue_node)
                 # Publication -> Venue
-                db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.VENUE, venue, PublicationEdge.VENUE)
+                db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.VENUE, venue_node['id'], PublicationEdge.VENUE)
 
             for ix, pub_author in enumerate(pub_authors):
                 if not pub_author['name']:
@@ -98,26 +98,33 @@ class WhoIsWhoDataset(Dataset):
                 }
 
                 # Author node
-                if ix==0:
-                    db.merge_node(NodeType.AUTHOR, author_node['id'], author_node)
+                if ix == 0:
+                    node_type = NodeType.AUTHOR
                 else:
-                    db.merge_node(NodeType.CONTRIBUTOR, author_node['id'], author_node)
+                    node_type = NodeType.CO_AUTHOR
+
+                db.merge_node(node_type, author_node['id'], author_node)
+
                 # Author -> Publication
-                db.merge_edge(NodeType.AUTHOR, author_node['id'], NodeType.PUBLICATION, values['id'], AuthorEdge.PUBLICATION)
+                db.merge_edge(node_type, author_node['id'], NodeType.PUBLICATION, values['id'],
+                              AuthorEdge.PUBLICATION)
                 # Publication -> Author
-                db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.AUTHOR, author_node['id'], PublicationEdge.AUTHOR)
+                db.merge_edge(NodeType.PUBLICATION, values['id'], node_type, author_node['id'],
+                              PublicationEdge.AUTHOR)
 
                 if pub_author['org']:
                     org_node = {
-                        'id': str(uuid.uuid4()),
+                        'id': str(mmh3.hash(venue)),
                         'name': pub_author['org']
                     }
 
                     # Organization node
                     db.merge_node(NodeType.ORGANIZATION, org_node['id'], org_node)
                     # Author -> Organization
-                    db.merge_edge(NodeType.AUTHOR, author_node['id'], NodeType.ORGANIZATION, pub_author['org'], AuthorEdge.ORGANIZATION)
+                    db.merge_edge(node_type, author_node['id'], NodeType.ORGANIZATION, org_node['id'],
+                                  AuthorEdge.ORGANIZATION)
 
+        # Merge true author data
         logger.info("Merging true author data into database ...")
         for author_id, values in true_author_data.items():
             true_author_node = {
@@ -130,6 +137,7 @@ class WhoIsWhoDataset(Dataset):
 
             for pub_id in values['normal_data']:
                 # Publication -> True Author
-                db.merge_edge(NodeType.PUBLICATION, pub_id, NodeType.TRUE_AUTHOR, true_author_node['id'], PublicationEdge.TRUE_AUTHOR)
+                db.merge_edge(NodeType.PUBLICATION, pub_id, NodeType.TRUE_AUTHOR, true_author_node['id'],
+                              PublicationEdge.TRUE_AUTHOR)
 
         logger.info("Finished merging WhoIsWho dataset.")
