@@ -91,6 +91,8 @@ if __name__ == '__main__':
         logger.info("Deleting the Neo4j database.")
         db = database_wrapper.DatabaseWrapper()
         db.delete_all_nodes()
+        run_state.reset()
+        run_state.load(config.RUN_ID, config.RUN_DIR)
     if args.ds_stats:
         logger.info("Calculating dataset statistics.")
         raise NotImplementedError

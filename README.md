@@ -10,6 +10,10 @@ This repository contains the code and the data used for the experiments in the m
 - **Step 1:** Create links between publications and their potential authors using the translational model. Sever the links between authors and publications that are likely not correct.
 - **Step 2:** Create links between authors that are likely identical.
 
+## TODOs
+- [x] Add edge from author org to publication
+- [ ] Add edge features to neo_to_pyg function
+
 ## Research Questions
 The research questions addressed in this thesis are:
 - How can Graph Learning methods be effectively used on the inherently heterogeneous public domain publication

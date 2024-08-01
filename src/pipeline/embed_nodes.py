@@ -54,7 +54,7 @@ def embed_nodes():
     if not run_state.completed('embed_nodes', 'embed_node_attributes'):
         logger.info("Embedding node attributes ...")
         model = SentenceTransformer(
-            'jordyvl/scibert_scivocab_uncased_sentence_transformer',
+            run_config.embed_nodes.transformer_model,
             device=config.DEVICE
         )
         # Embed Organization nodes

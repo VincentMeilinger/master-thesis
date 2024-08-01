@@ -123,6 +123,9 @@ class WhoIsWhoDataset(Dataset):
                     # Author -> Organization
                     db.merge_edge(node_type, author_node['id'], NodeType.ORGANIZATION, org_node['id'],
                                   AuthorEdge.ORGANIZATION)
+                    # Publication -> Organization
+                    db.merge_edge(NodeType.PUBLICATION, values['id'], NodeType.ORGANIZATION, org_node['id'],
+                                  AuthorEdge.ORGANIZATION)
 
         # Merge true author data
         logger.info("Merging true author data into database ...")
