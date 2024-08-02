@@ -5,7 +5,7 @@ from graphdatascience import GraphDataScience
 from src.shared import config
 import src.shared.run_state
 from src.shared.run_config import RunConfig
-from src.model.GAT.gat_encoder import GATEncoder
+from src.model.GAT.gat_encoder import GATv2Encoder
 from src.shared.database_wrapper import DatabaseWrapper
 
 logger = config.get_logger("TrainGAT")

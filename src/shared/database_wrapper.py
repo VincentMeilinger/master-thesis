@@ -15,11 +15,6 @@ class DatabaseWrapper:
         logger.debug(f"User: {config.DB_USER}")
         self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD))
 
-        # Create database indexes
-        self.create_index("idIndex", "Publication", "id")
-        self.create_vector_index("abstractEmbIndex", NodeType.PUBLICATION, "abstract_emb", 16)
-        self.create_vector_index("titleEmbIndex", NodeType.PUBLICATION, "title_emb", 16)
-
         logger.info("Database ready.")
 
     def create_vector_index(self, index_name: str, node_type: NodeType, attr_key: str, dimensions):

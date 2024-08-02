@@ -25,7 +25,7 @@ class EmbedNodesConfig:
 class LinkNodesConfig:
     def __init__(self):
         self.batch_size = 10000
-        self.similarity_threshold = 0.95
+        self.similarity_threshold = 0.98
         self.k_nearest_limit = 10
 
 

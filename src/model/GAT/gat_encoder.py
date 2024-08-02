@@ -3,24 +3,14 @@ import torch.nn.functional as F
 from torch_geometric.nn import GATv2Conv
 
 
-class GATEncoder(torch.nn.Module):
-    def __init__(self, node_feature_dim, edge_feature_dim, embedding_dim):
-        super(GATEncoder, self).__init__()
-
-        # First layer:
-        #   - use 8 attention heads
-        #   - output 8 features per head
-        self.conv1 = GATv2Conv(node_feature_dim, 8, heads=8, dropout=0.6, edge_dim=edge_feature_dim)
-
-        # Second layer:
-        #   - use a single attention head
-        #   - output num_classes features per node
-        self.conv2 = GATv2Conv(8 * 8, embedding_dim, heads=1, concat=False, dropout=0.6, edge_dim=edge_feature_dim)
+class GATv2Encoder(torch.nn.Module):
+    def __init__(self, in_channels, out_channels, heads=1, concat=True, negative_slope=0.2, dropout=0.0, add_self_loops=True, edge_dim=None):
+        super(GATv2Encoder, self).__init__()
+        self.conv1 = GATv2Conv(in_channels, out_channels, heads=heads, concat=concat, negative_slope=negative_slope, dropout=dropout, add_self_loops=add_self_loops, edge_dim=edge_dim)
+        self.conv2 = GATv2Conv(out_channels*heads if concat else out_channels, out_channels, heads=heads, concat=False, negative_slope=negative_slope, dropout=dropout, add_self_loops=add_self_loops, edge_dim=edge_dim)
 
     def forward(self, x, edge_index, edge_attr):
-        x = F.dropout(x, p=0.6, training=self.training)
-        x = F.elu(self.conv1(x, edge_index, edge_attr))
-        x = F.dropout(x, p=0.6, training=self.training)
+        x = self.conv1(x, edge_index, edge_attr)
+        x = torch.nn.functional.elu(x)
         x = self.conv2(x, edge_index, edge_attr)
-        # Directly use the output of the second layer as node embeddings
         return x

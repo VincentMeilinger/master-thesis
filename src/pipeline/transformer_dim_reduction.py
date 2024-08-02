@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer, models
 from ..shared import config
 from ..shared.run_config import RunConfig
 from ..datasets.who_is_who import WhoIsWhoDataset
-import src.shared.run_state
+from src.shared import run_state
 
 logger = config.get_logger("EmbDimReduction")
 
