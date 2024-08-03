@@ -188,7 +188,7 @@ class DatabaseWrapper:
                     MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
                     CALL apoc.path.subgraphAll(start, {{
                       maxLevel: {max_level},
-                      relationshipFilter: '>'
+                      relationshipFilter: '<>'
                     }}) YIELD nodes, relationships
                     RETURN nodes, relationships
                 """
