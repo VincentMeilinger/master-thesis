@@ -19,7 +19,8 @@ def create_nodes():
 
     if not run_state.completed('create_nodes', 'who_is_who'):
         logger.info("Creating nodes for WhoIsWho dataset ...")
-        WhoIsWhoDataset.parse_graph(run_config.create_nodes.max_nodes)
+        max_nodes = run_config.create_nodes.max_nodes if isinstance(run_config.create_nodes.max_nodes, int) else None
+        WhoIsWhoDataset.parse_graph(max_nodes)
         run_state.set_state('create_nodes', 'who_is_who', 'completed')
     else:
         logger.info("WhoIsWho dataset already processed. Skipping ...")

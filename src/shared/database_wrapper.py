@@ -97,6 +97,18 @@ class DatabaseWrapper:
             logger.exception(f"Failed to create edge between {node_id_1} and {node_id_2}")
             logger.exception(e)
 
+    def merge_properties(self, type: NodeType, node_id: str, properties: dict = {}):
+        with self.driver.session() as session:
+            query = f"""
+            MATCH (n:{type.value} {{id: $id}})
+            SET n += $properties
+            RETURN n
+            """
+            result = session.run(query, id=node_id, properties=properties)
+
+            if result.single() is None:
+                logger.error(f"Failed to find and update node {node_id}")
+
     def iterate_all_papers(self, batch_size: int):
         with self.driver.session() as session:
             offset = 0

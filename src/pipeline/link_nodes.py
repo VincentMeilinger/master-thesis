@@ -1,3 +1,4 @@
+import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -29,11 +30,15 @@ def link_node_attr_cosine(run_config: RunConfig, db: DatabaseWrapper, node_type:
     for nodes in db.iter_nodes(node_type, ['id', vec_attr]):
         logger.debug(f"Finding similar nodes for {len(nodes)} {node_type} nodes ...")
         for node in nodes:
+            # Skip nodes with zero vectors
+            if np.sum(node[vec_attr]) == 0:
+                continue
+
             similar_nodes = db.get_similar_nodes_vec(
                 node_type,
                 vec_attr,
                 node[vec_attr],
-                run_config.link_nodes.similarity_threshold,
+                0.9,
                 run_config.link_nodes.k_nearest_limit
             )
             for ix, row in similar_nodes.iterrows():
@@ -56,5 +61,6 @@ def link_nodes():
         logger.info("Creating edges between nodes ...")
         link_node_attr_cosine(run_config, db, NodeType.ORGANIZATION, 'vec', EdgeType.SIM_ORG)
         link_node_attr_cosine(run_config, db, NodeType.VENUE, 'vec', EdgeType.SIM_VENUE)
+        link_node_attr_cosine(run_config, db, NodeType.PUBLICATION, 'keywords_emb', EdgeType.SIM_KEYWORDS)
         run_state.set_state('link_nodes', 'link_node_attributes', 'completed')
         logger.info("Done.")

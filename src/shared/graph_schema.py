@@ -34,7 +34,7 @@ class EdgeType(Enum):
     SIM_VENUE = "SimilarVenue"
     SIM_TITLE = "SimilarTitle"
     SIM_ABSTRACT = "SimilarAbstract"
-    SIM_KEYWORD = "SimilarKeyword"
+    SIM_KEYWORDS = "SimilarKeywords"
     SIM_YEAR = "SimilarYear"
     SIM_AUTHOR = "SimilarAuthor"
 

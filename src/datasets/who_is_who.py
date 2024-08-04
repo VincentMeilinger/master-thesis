@@ -80,7 +80,7 @@ class WhoIsWhoDataset(Dataset):
             if venue:
                 venue_node = {
                     'id': str(mmh3.hash(venue)),
-                    'name': venue
+                    'name': venue.lower()
                 }
 
                 # Venue node
@@ -95,7 +95,7 @@ class WhoIsWhoDataset(Dataset):
 
                 author_node = {
                     'id': str(uuid.uuid4()),
-                    'name': pub_author['name']
+                    'name': pub_author['name'].lower()
                 }
 
                 # Author node
@@ -116,7 +116,7 @@ class WhoIsWhoDataset(Dataset):
                 if pub_author['org']:
                     org_node = {
                         'id': str(mmh3.hash(venue)),
-                        'name': pub_author['org']
+                        'name': pub_author['org'].lower()
                     }
 
                     # Organization node
@@ -137,9 +137,12 @@ class WhoIsWhoDataset(Dataset):
         # Merge true author data
         logger.info("Merging true author data into database ...")
         for author_id, values in true_author_data.items():
+            for pub_id in values['normal_data']:
+                db.merge_properties(NodeType.PUBLICATION, pub_id, {'true_author': author_id})
+            """
             true_author_node = {
                 'id': author_id,
-                'name': values['name']
+                'name': values['name'].lower()
             }
 
             # True Author node
@@ -149,5 +152,5 @@ class WhoIsWhoDataset(Dataset):
                 # Publication -> True Author
                 db.merge_edge(NodeType.PUBLICATION, pub_id, NodeType.TRUE_AUTHOR, true_author_node['id'],
                               EdgeType.PUB_TRUE_AUTHOR)
-
+            """
         logger.info("Finished merging WhoIsWho dataset.")
