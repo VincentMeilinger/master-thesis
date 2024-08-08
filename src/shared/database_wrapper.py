@@ -1,3 +1,4 @@
+import atexit
 import pandas as pd
 from neo4j import GraphDatabase
 from typing import List, Dict, Any
@@ -15,6 +16,11 @@ class DatabaseWrapper:
         logger.debug(f"User: {config.DB_USER}")
         self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD))
 
+        # Create Node Indexes
+        for node_type in NodeType:
+            self.create_index(f"index_{node_type.value}_id", node_type.value, "id")
+
+        atexit.register(self.close)
         logger.info("Database ready.")
 
     def create_vector_index(self, index_name: str, node_type: NodeType, attr_key: str, dimensions):
@@ -60,23 +66,36 @@ class DatabaseWrapper:
             if result.single() is None:
                 logger.error(f"Failed to create paper {node_id}")
 
-    def merge_nodes(self, type: NodeType, nodes: List[Dict[str, Any]]):
-        assert "id" in nodes[0] and "properties" in nodes[0], "Nodes should be a list of dictionaries with 'id' and 'properties' keys"
+    def merge_nodes(self, node_type: NodeType, nodes: list):
         with self.driver.session() as session:
             query = f"""
             UNWIND $nodes AS node
-            MERGE (n:{type.value} {{id: node.id}})
+            MERGE (n:{node_type.value} {{id: node.id}})
             ON CREATE SET n += node.properties
             ON MATCH SET n += node.properties
             RETURN n
             """
-            result = session.run(query, nodes=nodes)
+            result = session.run(query, nodes=[{"id": node["id"], "properties": node} for node in nodes])
 
-            # Handling the results or logging errors
             if result.single() is None:
-                logger.error("Failed to merge nodes")
-            else:
-                logger.info("Nodes merged successfully")
+                logger.error(f"Failed to merge nodes of type {type}")
+
+    def merge_edges(self, start_label: NodeType, end_label: NodeType, edge_type: EdgeType, edges: list):
+        with self.driver.session() as session:
+            query = f"""
+            UNWIND $edges AS edge
+            MATCH (a:{start_label.value} {{id: edge.start_id}})
+            MATCH (b:{end_label.value} {{id: edge.end_id}})
+            MERGE (a)-[r:{edge_type.value}]->(b)
+            RETURN r
+            """
+            result = session.run(query, edges=[{
+                "start_id": edge[0],
+                "end_id": edge[1]
+            } for edge in edges])
+
+            if result.single() is None:
+                logger.error(f"Failed to merge edges of type {edge_type.value}")
 
     def merge_edge(self, node_type_1: NodeType, node_id_1: str, node_type_2: NodeType, node_id_2: str, edge_type: EdgeType, properties: dict = {}):
         try:
@@ -218,7 +237,13 @@ class DatabaseWrapper:
     def delete_all_nodes(self):
         try:
             with self.driver.session() as session:
-                session.run("MATCH (n) DETACH DELETE n")
+                query = """
+                CALL apoc.periodic.iterate(
+                "MATCH (n) RETURN n",
+                "DETACH DELETE n",
+                {batchSize:10000})
+                """
+                session.run(query)
                 logger.info("Deleted all nodes.")
         except Exception as e:
             logger.error(f"Failed to delete all nodes: {e}")

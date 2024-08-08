@@ -40,7 +40,6 @@ MODEL_DIR = os.getenv('MODEL_DIR', './data/models')
 # Run-specific directories
 RUN_DIR = os.path.join(PIPELINE_DIR, RUN_ID)
 LOG_DIR = os.path.join(RUN_DIR, os.getenv('LOG_DIR', 'logs'))
-PROCESSED_DATA_DIR = os.path.join(RUN_DIR, os.getenv('PROCESSED_DATA_DIR', 'processed_data'))
 
 
 # Logging
@@ -92,8 +91,6 @@ def create_dirs():
         os.makedirs(RUN_DIR)
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
-    if not os.path.exists(PROCESSED_DATA_DIR):
-        os.makedirs(PROCESSED_DATA_DIR)
 
 
 def print_config():
@@ -113,7 +110,6 @@ def print_config():
 
     print(f"    - RUN_DIR:                  {RUN_DIR}")
     print(f"    - LOG_DIR:                  {LOG_DIR}")
-    print(f"    - PROCESSED_DATA_DIR:       {PROCESSED_DATA_DIR}")
 
     print(f"\n___ DATABASE ______________________________________\n")
     print(f"    - DB_URI:                   {DB_URI}")

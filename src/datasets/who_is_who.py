@@ -1,7 +1,11 @@
 import os
 import json
+import time
+
 import mmh3
 import uuid
+from tqdm import tqdm
+from collections import defaultdict
 
 from .dataset import Dataset
 from ..shared import config
@@ -56,6 +60,8 @@ class WhoIsWhoDataset(Dataset):
 
         return data
 
+    """
+    
     @staticmethod
     def parse_graph(max_iterations: int = None):
         logger.info("Parsing WhoIsWho dataset, merging data into database ...")
@@ -64,11 +70,16 @@ class WhoIsWhoDataset(Dataset):
         true_author_data = WhoIsWhoDataset.parse_train()
 
         logger.info("Merging file 'pid_to_info_all.json' ...")
+        total_entries = len(node_data.keys()) if max_iterations is None else max_iterations
         current_iteration = 0
+        start_time = time.time()
         for author_id, values in node_data.items():
             if max_iterations is not None and current_iteration >= max_iterations:
                 break
+
             current_iteration += 1
+            if current_iteration % 1000 == 0:
+                logger.info(f"Progress: {current_iteration / total_entries * 100:.2f}%, estimated time remaining: {((time.time() - start_time) / current_iteration) * (total_entries - current_iteration):.2f}s")
 
             # Prepare publication data
             pub_authors = values.pop('authors')
@@ -139,18 +150,110 @@ class WhoIsWhoDataset(Dataset):
         for author_id, values in true_author_data.items():
             for pub_id in values['normal_data']:
                 db.merge_properties(NodeType.PUBLICATION, pub_id, {'true_author': author_id})
-            """
-            true_author_node = {
-                'id': author_id,
-                'name': values['name'].lower()
-            }
-
-            # True Author node
-            db.merge_node(NodeType.TRUE_AUTHOR, true_author_node['id'], true_author_node)
-
-            for pub_id in values['normal_data']:
-                # Publication -> True Author
-                db.merge_edge(NodeType.PUBLICATION, pub_id, NodeType.TRUE_AUTHOR, true_author_node['id'],
-                              EdgeType.PUB_TRUE_AUTHOR)
-            """
+            
         logger.info("Finished merging WhoIsWho dataset.")
+    """
+
+    @staticmethod
+    def parse_graph(max_iterations: int = None, batch_size: int = 1000):
+        logger.info("Parsing WhoIsWho dataset, merging data into database ...")
+        db = DatabaseWrapper()
+        node_data = WhoIsWhoDataset.parse_data()
+        true_author_data = WhoIsWhoDataset.parse_train()
+
+        logger.info("Merging file 'pid_to_info_all.json' ...")
+        total_entries = len(node_data.keys()) if max_iterations is None else max_iterations
+        current_iteration = 0
+        start_time = time.time()
+
+        batch_nodes = defaultdict(list)
+        batch_edges = defaultdict(list)
+
+        def process_batch():
+            logger.debug(f"Merging batch of {batch_size} entries into the database ...")
+            for node_type, nodes in batch_nodes.items():
+                logger.debug(f"Merging {len(nodes)} nodes of type {node_type.value} ...")
+                if nodes:
+                    db.merge_nodes(node_type, nodes)
+            for edge_type, edges in batch_edges.items():
+                logger.debug(f"Merging {len(edges)} edges of type {edge_type.value} ...")
+                if edges:
+                    start_type, end_type = edge_type.start_end()
+                    db.merge_edges(start_type, end_type, edge_type, edges)
+            batch_nodes.clear()
+            batch_edges.clear()
+
+        with tqdm(total=total_entries, desc="Merging WhoIsWho pid_to_info_all.json") as pbar:
+            for author_id, values in node_data.items():
+                if max_iterations is not None and current_iteration >= max_iterations:
+                    break
+
+                if current_iteration % batch_size == 0 and current_iteration > 0:
+                    pbar.update(batch_size)
+                    process_batch()
+
+                current_iteration += 1
+
+                pub_authors = values.pop('authors')
+                venue = values.pop('venue')
+
+                # Publication node
+                batch_nodes[NodeType.PUBLICATION].append(values)
+
+                if venue:
+                    venue_node = {
+                        'id': str(mmh3.hash(venue)),
+                        'name': venue.lower()
+                    }
+                    # Venue node
+                    batch_nodes[NodeType.VENUE].append(venue_node)
+                    # Publication -> Venue
+                    batch_edges[EdgeType.PUB_VENUE].append((values['id'], venue_node['id']))
+                    batch_edges[EdgeType.VENUE_PUB].append((venue_node['id'], values['id']))
+
+                for ix, pub_author in enumerate(pub_authors):
+                    if not pub_author['name']:
+                        continue
+
+                    author_node = {
+                        'id': str(uuid.uuid4()),
+                        'name': pub_author['name'].lower()
+                    }
+
+                    if ix == 0:
+                        node_type = NodeType.AUTHOR
+                        edge_types = (EdgeType.AUTHOR_PUB, EdgeType.PUB_AUTHOR, EdgeType.AUTHOR_ORG, EdgeType.ORG_AUTHOR)
+                    else:
+                        node_type = NodeType.CO_AUTHOR
+                        edge_types = (EdgeType.CO_AUTHOR_PUB, EdgeType.PUB_CO_AUTHOR, EdgeType.CO_AUTHOR_ORG, EdgeType.ORG_CO_AUTHOR)
+
+                    batch_nodes[node_type].append(author_node)
+
+                    # Co-/Author -> Publication
+                    batch_edges[edge_types[0]].append((author_node['id'], values['id']))
+                    # Publication -> Co-/Author
+                    batch_edges[edge_types[1]].append((values['id'], author_node['id']))
+
+                    if pub_author['org']:
+                        org_node = {
+                            'id': str(mmh3.hash(pub_author['org'])),
+                            'name': pub_author['org'].lower()
+                        }
+
+                        batch_nodes[NodeType.ORGANIZATION].append(org_node)
+                        # Author -> Organization
+                        batch_edges[edge_types[2]].append((author_node['id'], org_node['id']))
+                        # Organization -> Author
+                        batch_edges[edge_types[3]].append((org_node['id'], author_node['id']))
+                        # Publication -> Organization
+                        batch_edges[EdgeType.PUB_ORG].append((values['id'], org_node['id']))
+                        # Organization -> Publication
+                        batch_edges[EdgeType.ORG_PUB].append((org_node['id'], values['id']))
+
+        # Merge true author data
+        logger.info("Merging true author data into database ...")
+        with tqdm(total=len(true_author_data.items()), desc="Merging WhoIsWho pid_to_info_all.json") as pbar:
+            for author_id, values in true_author_data.items():
+                for pub_id in values['normal_data']:
+                    db.merge_properties(NodeType.PUBLICATION, pub_id, {'true_author': author_id})
+                pbar.update(1)

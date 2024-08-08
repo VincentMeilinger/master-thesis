@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from src.shared import config
-from src.shared.run_config import RunConfig
+from src.shared import run_config
 from src.shared import run_state
 from src.shared.database_wrapper import DatabaseWrapper
 from src.shared.graph_schema import NodeType, EdgeType
@@ -21,7 +21,7 @@ def transformer_string_similarity(model, strings: list):
     return similarity
 
 
-def link_node_attr_cosine(run_config: RunConfig, db: DatabaseWrapper, node_type: NodeType, vec_attr: str,
+def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: str,
                           edge_type: EdgeType):
     if run_state.completed('link_nodes', f'link_{node_type.value}_{edge_type.value}'):
         logger.info(f"Linking {node_type.value} nodes already completed. Skipping ...")
@@ -39,7 +39,7 @@ def link_node_attr_cosine(run_config: RunConfig, db: DatabaseWrapper, node_type:
                 vec_attr,
                 node[vec_attr],
                 0.9,
-                run_config.link_nodes.k_nearest_limit
+                run_config.get_config('link_nodes', 'k_nearest_limit')
             )
             for ix, row in similar_nodes.iterrows():
                 if row['id'] == node['id']:
@@ -53,14 +53,13 @@ def link_node_attr_cosine(run_config: RunConfig, db: DatabaseWrapper, node_type:
 def link_nodes():
     """Create edges between nodes in the graph database based on author, venue, and keyword similarity.
     """
-    run_config = RunConfig(config.RUN_DIR)
 
     db = DatabaseWrapper()
 
     if not run_state.completed('link_nodes', 'link_node_attributes'):
         logger.info("Creating edges between nodes ...")
-        link_node_attr_cosine(run_config, db, NodeType.ORGANIZATION, 'vec', EdgeType.SIM_ORG)
-        link_node_attr_cosine(run_config, db, NodeType.VENUE, 'vec', EdgeType.SIM_VENUE)
-        link_node_attr_cosine(run_config, db, NodeType.PUBLICATION, 'keywords_emb', EdgeType.SIM_KEYWORDS)
+        link_node_attr_cosine(db, NodeType.ORGANIZATION, 'vec', EdgeType.SIM_ORG)
+        link_node_attr_cosine(db, NodeType.VENUE, 'vec', EdgeType.SIM_VENUE)
+        link_node_attr_cosine(db, NodeType.PUBLICATION, 'keywords_emb', EdgeType.SIM_KEYWORDS)
         run_state.set_state('link_nodes', 'link_node_attributes', 'completed')
         logger.info("Done.")

@@ -8,9 +8,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer, models
 
 from ..shared import config
-from ..shared.run_config import RunConfig
 from ..datasets.who_is_who import WhoIsWhoDataset
 from src.shared import run_state
+from src.shared import run_config
 
 logger = config.get_logger("EmbDimReduction")
 
@@ -61,8 +61,6 @@ def edr_eval(train, full_emb, new_dimension: int, model_name: str = "all-mpnet-b
 
 
 def prep_transformer():
-    run_config = RunConfig(config.RUN_DIR)
-
     if run_state.completed('transformer_dim_reduction', 'state'):
         logger.info("Transformer dimensionality reduction already completed. Skipping ...")
         return
@@ -82,13 +80,14 @@ def prep_transformer():
     test_size = int(0.1 * len(abstracts))
     train, test, valid = abstracts[:train_size], abstracts[train_size:train_size + test_size], abstracts[
                                                                                                train_size + test_size:]
-    max_samples = int(run_config.transformer_dim_reduction.num_pca_samples)
+    max_samples = int(run_config.get_config('transformer_dim_reduction', 'num_pca_samples'))
     train = train[0:max_samples]
 
     # Embed train data using full model for comparison
-    logger.info(f"Embedding train data using full model {run_config.transformer_dim_reduction.base_model} ...")
+    base_model = run_config.get_config('transformer_dim_reduction', 'base_model')
+    logger.info(f"Embedding train data using full model {base_model} ...")
     full_model = SentenceTransformer(
-        run_config.transformer_dim_reduction.base_model,
+        base_model,
         cache_folder=config.MODEL_DIR,
         device=config.DEVICE
     )
@@ -100,7 +99,7 @@ def prep_transformer():
     edr_eval(
         train,
         full_emb,
-        new_dimension=run_config.transformer_dim_reduction.reduced_dim,
-        model_name=run_config.transformer_dim_reduction.base_model
+        new_dimension=run_config.get_config('transformer_dim_reduction', 'reduced_dim'),
+        model_name=run_config.get_config('transformer_dim_reduction', 'base_model')
     )
     run_state.set_state('transformer_dim_reduction', 'state', 'completed')

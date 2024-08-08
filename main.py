@@ -4,6 +4,7 @@ import argparse
 from src.shared import (
     config,
     run_state,
+    run_config,
     database_wrapper
 )
 from src.pipeline import (
@@ -15,7 +16,8 @@ from src.pipeline import (
     link_nodes
 )
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser(description="Train the AND model, populate the Neo4j database.")
 
     # Arguments
@@ -85,6 +87,7 @@ if __name__ == '__main__':
         logger.info("Resetting the pipeline state.")
         run_state.reset()
 
+    run_config.load(config.RUN_ID, config.RUN_DIR)
     run_state.load(config.RUN_ID, config.RUN_DIR)
 
     if args.delete_db:
@@ -126,3 +129,7 @@ if __name__ == '__main__':
     if args.eval:
         logger.info("Evaluating the AND model.")
         raise NotImplementedError
+
+
+if __name__ == '__main__':
+    main()
