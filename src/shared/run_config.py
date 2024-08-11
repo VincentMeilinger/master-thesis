@@ -10,21 +10,22 @@ default_run_config = {
     'transformer_dim_reduction': {
         'base_model': 'jordyvl/scibert_scivocab_uncased_sentence_transformer',
         'reduced_dim': '32',
-        'num_pca_samples': '10000'
+        'num_pca_samples': '10000',
     },
-    'populate_db': {
+    'create_nodes': {
         'db_name': 'knowledge_graph',
         'max_nodes': '1000',
-        'max_seq_len': '256'
+        'max_seq_len': '256',
     },
-    'embed_datasets': {
+    'embed_nodes': {
         'transformer_model': 'jordyvl/scibert_scivocab_uncased_sentence_transformer',
-        'batch_size': '10000'
+        'transformer_dim': '32',
+        'batch_size': '10000',
     },
-    'create_edges': {
+    'link_nodes': {
         'batch_size': '10000',
         'similarity_threshold': '0.98',
-        'k_nearest_limit': '10'
+        'k_nearest_limit': '10',
     },
     'train_graph_model': {},
     'evaluate_graph_model': {},
@@ -42,7 +43,6 @@ def load(run_id: str, run_path: str):
     try:
         config.read(os.path.join(run_path, 'run_config.ini'))
         run_config = {section: dict(config.items(section)) for section in config.sections()}
-        print("RUN_CONFIG", json.dumps(run_config, indent=4))
         if not run_config:
             raise Exception("run_config.ini is empty. Initializing with default values and stopping execution. "
                             "Modify the values in the run_config.ini file and run again.")
@@ -60,6 +60,7 @@ def load(run_id: str, run_path: str):
 
 
 def save():
+    global run_config
     config = configparser.ConfigParser()
     for section, section_data in run_config.items():
         config[section] = section_data
@@ -69,6 +70,7 @@ def save():
 
 
 def set_config(section: str, key: str, value: str):
+    global run_config
     if section not in run_config:
         run_config[section] = {}
     run_config[section][key] = value
@@ -76,6 +78,5 @@ def set_config(section: str, key: str, value: str):
 
 
 def get_config(section: str, key: str):
-    if section not in run_config:
-        return None
-    return run_config[section].get(key, None)
+    global run_config
+    return run_config.get(section, {}).get(key, None)

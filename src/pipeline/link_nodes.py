@@ -34,12 +34,13 @@ def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: st
             if np.sum(node[vec_attr]) == 0:
                 continue
 
+            k = int(run_config.get_config('link_nodes', 'k_nearest_limit'))
             similar_nodes = db.get_similar_nodes_vec(
                 node_type,
                 vec_attr,
                 node[vec_attr],
                 0.9,
-                run_config.get_config('link_nodes', 'k_nearest_limit')
+                k
             )
             for ix, row in similar_nodes.iterrows():
                 if row['id'] == node['id']:
@@ -56,10 +57,10 @@ def link_nodes():
 
     db = DatabaseWrapper()
 
-    if not run_state.completed('link_nodes', 'link_node_attributes'):
-        logger.info("Creating edges between nodes ...")
-        link_node_attr_cosine(db, NodeType.ORGANIZATION, 'vec', EdgeType.SIM_ORG)
-        link_node_attr_cosine(db, NodeType.VENUE, 'vec', EdgeType.SIM_VENUE)
-        link_node_attr_cosine(db, NodeType.PUBLICATION, 'keywords_emb', EdgeType.SIM_KEYWORDS)
-        run_state.set_state('link_nodes', 'link_node_attributes', 'completed')
-        logger.info("Done.")
+    logger.info("Linking nodes based on attribute similarities ...")
+    link_node_attr_cosine(db, NodeType.ORGANIZATION, 'vec', EdgeType.SIM_ORG)
+    link_node_attr_cosine(db, NodeType.VENUE, 'vec', EdgeType.SIM_VENUE)
+    link_node_attr_cosine(db, NodeType.PUBLICATION, 'keywords_emb', EdgeType.SIM_KEYWORDS)
+
+    db.close()
+    logger.info("Done.")

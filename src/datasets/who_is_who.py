@@ -156,15 +156,14 @@ class WhoIsWhoDataset(Dataset):
 
     @staticmethod
     def parse_graph(max_iterations: int = None, batch_size: int = 1000):
-        logger.info("Parsing WhoIsWho dataset, merging data into database ...")
+        logger.debug("Parsing WhoIsWho dataset, merging data into database ...")
         db = DatabaseWrapper()
         node_data = WhoIsWhoDataset.parse_data()
         true_author_data = WhoIsWhoDataset.parse_train()
 
-        logger.info("Merging file 'pid_to_info_all.json' ...")
+        logger.debug("Merging file 'pid_to_info_all.json' ...")
         total_entries = len(node_data.keys()) if max_iterations is None else max_iterations
         current_iteration = 0
-        start_time = time.time()
 
         batch_nodes = defaultdict(list)
         batch_edges = defaultdict(list)
@@ -222,10 +221,12 @@ class WhoIsWhoDataset(Dataset):
 
                     if ix == 0:
                         node_type = NodeType.AUTHOR
-                        edge_types = (EdgeType.AUTHOR_PUB, EdgeType.PUB_AUTHOR, EdgeType.AUTHOR_ORG, EdgeType.ORG_AUTHOR)
+                        edge_types = (
+                        EdgeType.AUTHOR_PUB, EdgeType.PUB_AUTHOR, EdgeType.AUTHOR_ORG, EdgeType.ORG_AUTHOR)
                     else:
                         node_type = NodeType.CO_AUTHOR
-                        edge_types = (EdgeType.CO_AUTHOR_PUB, EdgeType.PUB_CO_AUTHOR, EdgeType.CO_AUTHOR_ORG, EdgeType.ORG_CO_AUTHOR)
+                        edge_types = (
+                        EdgeType.CO_AUTHOR_PUB, EdgeType.PUB_CO_AUTHOR, EdgeType.CO_AUTHOR_ORG, EdgeType.ORG_CO_AUTHOR)
 
                     batch_nodes[node_type].append(author_node)
 
@@ -251,9 +252,18 @@ class WhoIsWhoDataset(Dataset):
                         batch_edges[EdgeType.ORG_PUB].append((org_node['id'], values['id']))
 
         # Merge true author data
-        logger.info("Merging true author data into database ...")
-        with tqdm(total=len(true_author_data.items()), desc="Merging WhoIsWho pid_to_info_all.json") as pbar:
+        logger.debug("Merging true author data into database ...")
+        props = []
+        with tqdm(total=len(true_author_data.items()), desc="Merging WhoIsWho train_author.json") as pbar:
             for author_id, values in true_author_data.items():
                 for pub_id in values['normal_data']:
-                    db.merge_properties(NodeType.PUBLICATION, pub_id, {'true_author': author_id})
+                    props.append({'id': pub_id, 'properties': {'true_author': author_id}})
                 pbar.update(1)
+                if len(props) > batch_size:
+                    db.merge_properties_batch(NodeType.PUBLICATION, props)
+                    props.clear()
+
+            if props:
+                db.merge_properties_batch(NodeType.PUBLICATION, props)
+
+        db.close()

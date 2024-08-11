@@ -128,6 +128,19 @@ class DatabaseWrapper:
             if result.single() is None:
                 logger.error(f"Failed to find and update node {node_id}")
 
+    def merge_properties_batch(self, node_type: NodeType, nodes: List[Dict[str, Any]]):
+        with self.driver.session() as session:
+            query = f"""
+            UNWIND $nodes AS node
+            MATCH (n:{node_type.value} {{id: node.id}})
+            SET n += node.properties
+            RETURN n
+            """
+            result = session.run(query, nodes=nodes)
+
+            if result.single() is None:
+                logger.debug(f"Failed to find and update nodes")
+
     def iterate_all_papers(self, batch_size: int):
         with self.driver.session() as session:
             offset = 0
@@ -216,13 +229,13 @@ class DatabaseWrapper:
     def fetch_neighborhood(self, start_node_type: NodeType, start_node_id: str, max_level: int):
         with self.driver.session() as session:
             query = f"""
-                    MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
-                    CALL apoc.path.subgraphAll(start, {{
-                      maxLevel: {max_level},
-                      relationshipFilter: '<>'
-                    }}) YIELD nodes, relationships
-                    RETURN nodes, relationships
-                """
+                MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
+                CALL apoc.path.subgraphAll(start, {{
+                  maxLevel: {max_level},
+                  relationshipFilter: '<'
+                }}) YIELD nodes, relationships
+                RETURN nodes, relationships
+            """
             result = session.run(query)
 
             nodes_list = []
@@ -250,7 +263,23 @@ class DatabaseWrapper:
 
     def delete_nodes(self, label):
         with self.driver.session() as session:
-            session.run(f"MATCH (n:{label}) DETACH DELETE n")
+            query = f"""
+            CALL apoc.periodic.iterate(
+            "MATCH (n:{label}) RETURN n",
+            "DETACH DELETE n",
+            {{batchSize:10000}})
+            """
+            session.run(query)
+
+    def delete_edges(self, edge_type: EdgeType):
+        with self.driver.session() as session:
+            query = f"""
+            CALL apoc.periodic.iterate(
+            "MATCH ()-[r:{edge_type.value}]-() RETURN r",
+            "DELETE r",
+            {{batchSize:10000}})
+            """
+            session.run(query)
 
     def close(self):
         logger.info("Closing the database connection")

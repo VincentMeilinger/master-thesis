@@ -8,7 +8,6 @@ _initialized = False
 
 def load(run_id: str, run_path: str):
     global _initialized, run_state
-    print("RUN_STATE", json.dumps(run_state, indent=4))
     if _initialized:
         return
 
@@ -35,7 +34,10 @@ def load(run_id: str, run_path: str):
 def save():
     config = configparser.ConfigParser()
     for section, section_data in run_state.items():
-        config[section] = section_data
+        try:
+            config[section] = section_data
+        except Exception as e:
+            continue
     path = os.path.join(run_state['general']['run_path'], 'run_state.ini')
     with open(path, 'w') as configfile:
         config.write(configfile)
