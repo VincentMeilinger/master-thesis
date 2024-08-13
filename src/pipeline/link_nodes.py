@@ -27,6 +27,8 @@ def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: st
         logger.info(f"Linking {node_type.value} nodes already completed. Skipping ...")
         return
 
+    logger.info(f"Linking {node_type.value} nodes based on {vec_attr} attribute ...")
+
     for nodes in db.iter_nodes(node_type, ['id', vec_attr]):
         logger.debug(f"Finding similar nodes for {len(nodes)} {node_type} nodes ...")
         for node in nodes:
@@ -39,13 +41,12 @@ def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: st
                 node_type,
                 vec_attr,
                 node[vec_attr],
-                0.9,
+                0.99,
                 k
             )
             for ix, row in similar_nodes.iterrows():
                 if row['id'] == node['id']:
                     continue
-                #print(f"Similarity {row['sim']} between \n{node['id']}\n{row['id']}")
                 db.merge_edge(node_type, node['id'], node_type, row['id'], edge_type, {"sim": row['sim']})
 
     run_state.set_state('link_nodes', f'link_{node_type.value}_{edge_type.value}', 'completed')

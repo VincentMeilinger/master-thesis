@@ -219,21 +219,12 @@ class WhoIsWhoDataset(Dataset):
                         'name': pub_author['name'].lower()
                     }
 
-                    if ix == 0:
-                        node_type = NodeType.AUTHOR
-                        edge_types = (
-                        EdgeType.AUTHOR_PUB, EdgeType.PUB_AUTHOR, EdgeType.AUTHOR_ORG, EdgeType.ORG_AUTHOR)
-                    else:
-                        node_type = NodeType.CO_AUTHOR
-                        edge_types = (
-                        EdgeType.CO_AUTHOR_PUB, EdgeType.PUB_CO_AUTHOR, EdgeType.CO_AUTHOR_ORG, EdgeType.ORG_CO_AUTHOR)
-
-                    batch_nodes[node_type].append(author_node)
+                    batch_nodes[NodeType.AUTHOR].append(author_node)
 
                     # Co-/Author -> Publication
-                    batch_edges[edge_types[0]].append((author_node['id'], values['id']))
+                    batch_edges[EdgeType.AUTHOR_PUB].append((author_node['id'], values['id']))
                     # Publication -> Co-/Author
-                    batch_edges[edge_types[1]].append((values['id'], author_node['id']))
+                    batch_edges[EdgeType.PUB_AUTHOR].append((values['id'], author_node['id']))
 
                     if pub_author['org']:
                         org_node = {
@@ -243,9 +234,9 @@ class WhoIsWhoDataset(Dataset):
 
                         batch_nodes[NodeType.ORGANIZATION].append(org_node)
                         # Author -> Organization
-                        batch_edges[edge_types[2]].append((author_node['id'], org_node['id']))
+                        batch_edges[EdgeType.AUTHOR_ORG].append((author_node['id'], org_node['id']))
                         # Organization -> Author
-                        batch_edges[edge_types[3]].append((org_node['id'], author_node['id']))
+                        batch_edges[EdgeType.ORG_AUTHOR].append((org_node['id'], author_node['id']))
                         # Publication -> Organization
                         batch_edges[EdgeType.PUB_ORG].append((values['id'], org_node['id']))
                         # Organization -> Publication
@@ -256,8 +247,9 @@ class WhoIsWhoDataset(Dataset):
         props = []
         with tqdm(total=len(true_author_data.items()), desc="Merging WhoIsWho train_author.json") as pbar:
             for author_id, values in true_author_data.items():
+                author_name = values['name']
                 for pub_id in values['normal_data']:
-                    props.append({'id': pub_id, 'properties': {'true_author': author_id}})
+                    props.append({'id': pub_id, 'properties': {'true_author': author_name}})
                 pbar.update(1)
                 if len(props) > batch_size:
                     db.merge_properties_batch(NodeType.PUBLICATION, props)
