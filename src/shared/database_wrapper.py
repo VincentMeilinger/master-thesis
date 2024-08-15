@@ -215,6 +215,17 @@ class DatabaseWrapper:
             result = session.run(query).data()
             return pd.DataFrame(result)
 
+    def get_nodes_by_id(self, label: str, ids: list, keys: list) -> pd.DataFrame:
+        with self.driver.session() as session:
+            props = ", ".join([f"n.{key} AS {key}" for key in keys])
+            query = f"""
+            MATCH (n:{label})
+            WHERE n.id IN $ids
+            RETURN {props}
+            """
+            result = session.run(query, ids=ids).data()
+            return pd.DataFrame(result)
+
     def get_similar_nodes_vec(self, node_type: NodeType, vec_attr: str, vector, thresh, k) -> pd.DataFrame:
         with self.driver.session() as session:
             query = f"""

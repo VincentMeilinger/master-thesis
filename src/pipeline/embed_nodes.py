@@ -116,7 +116,6 @@ def embed_nodes():
     embed_string_attr(model, db, NodeType.VENUE, 'name', 'vec')
     # Embed Author nodes
     embed_string_attr(model, db, NodeType.AUTHOR, 'name', 'vec')
-    embed_string_attr(model, db, NodeType.CO_AUTHOR, 'name', 'vec')
     # Embed Paper nodes
     embed_string_attr(model, db, NodeType.PUBLICATION, 'abstract', 'vec')
 
