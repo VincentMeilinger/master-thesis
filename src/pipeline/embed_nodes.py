@@ -1,4 +1,5 @@
 import json
+from tqdm import tqdm
 import numpy as np
 from time import time
 from sentence_transformers import SentenceTransformer
@@ -24,35 +25,37 @@ def embed_string_attr(
     if run_state.completed('embed_nodes', state_key):
         logger.info(f"Embedding {node_type.value} {attr_key} attributes already completed. Skipping ...")
         return
-    logger.info(f"Embedding {node_type.value} {attr_key} attribute ...")
 
     if feature_key is None:
         feature_key = f"{attr_key}_emb"
 
-    for nodes in db.iter_nodes(node_type, ['id', attr_key]):
-        logger.debug(f"Embedding {len(nodes)} {node_type.value} nodes ...")
-        node_ids = []
-        node_attrs = []
-        for node in nodes:
-            node_ids.append(node['id'])
-            if node[attr_key]:
-                node_attrs.append(node[attr_key])
-            else:
-                node_attrs.append('')
+    num_nodes = db.count_nodes(node_type)
+    logger.info(f"Embedding {attr_key} attribute of {num_nodes} {node_type.value} nodes ...")
+    with tqdm(total=num_nodes, desc=f"Progress {node_type.value} {attr_key}") as pbar:
+        for nodes in db.iter_nodes(node_type, ['id', attr_key]):
+            pbar.update(len(nodes))
+            node_ids = []
+            node_attrs = []
+            for node in nodes:
+                node_ids.append(node['id'])
+                if node[attr_key]:
+                    node_attrs.append(node[attr_key])
+                else:
+                    node_attrs.append('')
 
-        embeddings = model.encode(node_attrs)
-        embeddings = embeddings.astype(np.float32)
-        # emb_quantized = quantize_embeddings(embeddings, precision='ubinary')
-        merge_nodes = []
-        for node_id, attr, emb in zip(node_ids, node_attrs, embeddings):
-            if attr == '':
-                emb = np.zeros_like(emb, dtype=np.float32)
+            embeddings = model.encode(node_attrs)
+            embeddings = embeddings.astype(np.float32)
+            # emb_quantized = quantize_embeddings(embeddings, precision='ubinary')
+            merge_nodes = []
+            for node_id, attr, emb in zip(node_ids, node_attrs, embeddings):
+                if attr == '':
+                    emb = np.zeros_like(emb, dtype=np.float32)
 
-            merge_nodes.append(
-                {'id': node_id, 'properties': {feature_key: emb.tolist()}}
-            )
-        #db.merge_nodes(node_type, merge_nodes)
-        db.merge_properties_batch(node_type, merge_nodes)
+                merge_nodes.append(
+                    {'id': node_id, 'properties': {feature_key: emb.tolist()}}
+                )
+            #db.merge_nodes(node_type, merge_nodes)
+            db.merge_properties_batch(node_type, merge_nodes)
 
     reduced_dim = run_config.get_config('embed_nodes', 'transformer_dim')
     db.create_vector_index(feature_key, node_type, feature_key, reduced_dim)
@@ -70,26 +73,27 @@ def embed_pub_keywords(
         logger.info(f"Embedding {node_type.value} {attr_key} attributes already completed. Skipping ...")
         return
 
-    logger.info(f"Embedding {node_type.value} {attr_key} attribute ...")
-
     if feature_key is None:
         feature_key = f"{attr_key}_emb"
 
-    for nodes in db.iter_nodes(node_type, ['id', attr_key]):
-        logger.debug(f"Embedding {len(nodes)} {node_type.value} nodes ...")
-        ids = [node['id'] for node in nodes]
-        strings = [' '.join(node[attr_key]) for node in nodes]
-        embeddings = model.encode(strings)
-        # If the string is empty or 'null', replace the embedding with all zeros
-        # emb_quantized = quantize_embeddings(embeddings, precision='ubinary')
-        embeddings = [emb if (len(strings[i]) > 4) else np.zeros_like(emb) for i, emb in enumerate(embeddings)]
+    num_nodes = db.count_nodes(node_type)
+    logger.info(f"Embedding {attr_key} attribute of {num_nodes} {node_type.value} nodes ...")
+    with tqdm(total=num_nodes, desc=f"Progress {node_type.value} {attr_key}") as pbar:
+        for nodes in db.iter_nodes(node_type, ['id', attr_key]):
+            pbar.update(len(nodes))
+            ids = [node['id'] for node in nodes]
+            strings = [' '.join(node[attr_key]) for node in nodes]
+            embeddings = model.encode(strings)
+            # If the string is empty or 'null', replace the embedding with all zeros
+            # emb_quantized = quantize_embeddings(embeddings, precision='ubinary')
+            embeddings = [emb if (len(strings[i]) > 4) else np.zeros_like(emb) for i, emb in enumerate(embeddings)]
 
-        merge_nodes = []
-        for node_id, emb in zip(ids, embeddings):
-            merge_nodes.append(
-                {'id': node_id, 'properties': {f'{feature_key}': emb.tolist()}}
-            )
-        db.merge_properties_batch(node_type, merge_nodes)
+            merge_nodes = []
+            for node_id, emb in zip(ids, embeddings):
+                merge_nodes.append(
+                    {'id': node_id, 'properties': {f'{feature_key}': emb.tolist()}}
+                )
+            db.merge_properties_batch(node_type, merge_nodes)
 
     reduced_dim = run_config.get_config('transformer_dim_reduction', 'reduced_dim')
     db.create_vector_index(feature_key, node_type, feature_key, reduced_dim)

@@ -292,6 +292,15 @@ class DatabaseWrapper:
             """
             session.run(query)
 
+    def count_nodes(self, label):
+        with self.driver.session() as session:
+            query = f"""
+            MATCH (n:{label})
+            RETURN count(n) as count
+            """
+            result = session.run(query).single()
+            return result["count"]
+
     def close(self):
         logger.info("Closing the database connection")
         self.driver.close()
