@@ -99,7 +99,7 @@ def prep_transformer():
     edr_eval(
         train,
         full_emb,
-        new_dimension=run_config.get_config('transformer_dim_reduction', 'reduced_dim'),
+        new_dimension=int(run_config.get_config('transformer_dim_reduction', 'reduced_dim')),
         model_name=run_config.get_config('transformer_dim_reduction', 'base_model')
     )
     run_state.set_state('transformer_dim_reduction', 'state', 'completed')

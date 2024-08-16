@@ -292,10 +292,10 @@ class DatabaseWrapper:
             """
             session.run(query)
 
-    def count_nodes(self, label):
+    def count_nodes(self, node_type):
         with self.driver.session() as session:
             query = f"""
-            MATCH (n:{label})
+            MATCH (n:{node_type.value})
             RETURN count(n) as count
             """
             result = session.run(query).single()
