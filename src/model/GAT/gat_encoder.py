@@ -7,11 +7,12 @@ from torch_geometric.nn import Linear
 class GATv2Encoder(torch.nn.Module):
     def __init__(
             self,
-            metadata,
+            in_channels,
             hidden_channels,
             out_channels,
-            node_type_size_dict,
-            edge_feature_dim_dict,
+            edge_feature_dim,
+            edge_types,
+            node_types,
             heads=5,
             concat=True,
             negative_slope=0.2,
@@ -22,16 +23,16 @@ class GATv2Encoder(torch.nn.Module):
 
         self.conv_1 = HeteroConv({
             edge_type: GATv2Conv(
-                in_channels=node_type_size_dict[src],
+                in_channels=in_channels,
                 out_channels=hidden_channels,
                 heads=heads,
                 concat=concat,
                 negative_slope=negative_slope,
                 dropout=dropout,
                 add_self_loops=add_self_loops,
-                edge_dim=edge_feature_dim_dict[edge_type]
+                edge_dim=edge_feature_dim
             )
-            for edge_type, (src, _, _) in metadata[1]
+            for edge_type in edge_types
         }, aggr='mean')
 
         self.conv_2 = HeteroConv({
@@ -43,40 +44,39 @@ class GATv2Encoder(torch.nn.Module):
                 negative_slope=negative_slope,
                 dropout=dropout,
                 add_self_loops=add_self_loops,
-                edge_dim=edge_feature_dim_dict[edge_type]
+                edge_dim=edge_feature_dim
             )
-            for edge_type, (src, _, _) in metadata[1]
+            for edge_type in edge_types
         }, aggr='mean')
 
         self.lin_out = torch.nn.ModuleDict()
-        for node_type in metadata[0]:
+        for node_type in node_types:
             self.lin_out[node_type] = torch.nn.Sequential(
                 Linear(heads * hidden_channels, hidden_channels),
                 torch.nn.Dropout(dropout),
                 Linear(hidden_channels, out_channels)
             )
 
-    def forward(self, x_dict, edge_index_dict, edge_attr_dict):
+    def forward(self, x_dict, edge_index_dict, edge_feature_dict):
         """
         :param x_dict: dict of torch.Tensor
             Node feature vectors for each node type.
         :param edge_index_dict: dict of torch.Tensor
             Edge indices for each edge type.
-        :param edge_attr_dict: dict of torch.Tensor
+        :param edge_feature_dict: dict of torch.Tensor
             Edge attribute vectors for each edge type.
         """
 
-        x_dict = self.convs1(x_dict, edge_index_dict, edge_attr_dict)
-        for node_type in x_dict:
+        x_dict = self.conv_1(x_dict, edge_index_dict, edge_feature_dict)
+        for node_type in x_dict.keys():
             x_dict[node_type] = F.dropout(F.relu(x_dict[node_type]), p=0.5, training=self.training)
 
-        x_dict = self.convs2(x_dict, edge_index_dict, edge_attr_dict)
-        for node_type in x_dict:
+        x_dict = self.conv_2(x_dict, edge_index_dict, edge_feature_dict)
+        for node_type in x_dict.keys():
             x_dict[node_type] = F.dropout(F.relu(x_dict[node_type]), p=0.5, training=self.training)
 
-        # Apply output transformation for each node type
         out_dict = {}
-        for node_type in x_dict:
+        for node_type in x_dict.keys():
             out_dict[node_type] = self.lin_out[node_type](x_dict[node_type])
 
         return out_dict

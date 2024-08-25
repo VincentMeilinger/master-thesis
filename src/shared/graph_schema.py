@@ -108,6 +108,54 @@ edge_start_end = {
     EdgeType.VENUE_PUB: (NodeType.VENUE, NodeType.PUBLICATION),
 }
 
+edge_pyg_key = {
+    # Similar edges
+    EdgeType.SIM_PUB: (NodeType.PUBLICATION, EdgeType.SIM_PUB, NodeType.PUBLICATION),
+    EdgeType.SIM_ORG: (NodeType.ORGANIZATION, EdgeType.SIM_ORG, NodeType.ORGANIZATION),
+    EdgeType.SIM_VENUE: (NodeType.VENUE, EdgeType.SIM_VENUE, NodeType.VENUE),
+    EdgeType.SIM_TITLE: (NodeType.PUBLICATION, EdgeType.SIM_TITLE, NodeType.PUBLICATION),
+    EdgeType.SIM_ABSTRACT: (NodeType.PUBLICATION, EdgeType.SIM_ABSTRACT, NodeType.PUBLICATION),
+    EdgeType.SIM_KEYWORDS: (NodeType.PUBLICATION, EdgeType.SIM_KEYWORDS, NodeType.PUBLICATION),
+    EdgeType.SIM_YEAR: (NodeType.PUBLICATION, EdgeType.SIM_YEAR, NodeType.PUBLICATION),
+    EdgeType.SIM_AUTHOR: (NodeType.AUTHOR, EdgeType.SIM_AUTHOR, NodeType.AUTHOR),
+
+    # Publication edges
+    EdgeType.PUB_VENUE: (NodeType.PUBLICATION, EdgeType.PUB_VENUE, NodeType.VENUE),
+    EdgeType.PUB_AUTHOR: (NodeType.PUBLICATION, EdgeType.PUB_AUTHOR, NodeType.AUTHOR),
+    EdgeType.PUB_CO_AUTHOR: (NodeType.PUBLICATION, EdgeType.PUB_CO_AUTHOR, NodeType.CO_AUTHOR),
+    EdgeType.PUB_TRUE_AUTHOR: (NodeType.PUBLICATION, EdgeType.PUB_TRUE_AUTHOR, NodeType.AUTHOR),
+    EdgeType.PUB_CITES: (NodeType.PUBLICATION, EdgeType.PUB_CITES, NodeType.PUBLICATION),
+    EdgeType.PUB_ORG: (NodeType.PUBLICATION, EdgeType.PUB_ORG, NodeType.ORGANIZATION),
+
+    # Author edges
+    EdgeType.AUTHOR_ORG: (NodeType.AUTHOR, EdgeType.AUTHOR_ORG, NodeType.ORGANIZATION),
+    EdgeType.AUTHOR_PUB: (NodeType.AUTHOR, EdgeType.AUTHOR_PUB, NodeType.PUBLICATION),
+    EdgeType.AUTHOR_CO_AUTHOR: (NodeType.AUTHOR, EdgeType.AUTHOR_CO_AUTHOR, NodeType.CO_AUTHOR),
+
+    # CoAuthor edges
+    EdgeType.CO_AUTHOR_PUB: (NodeType.CO_AUTHOR, EdgeType.CO_AUTHOR_PUB, NodeType.PUBLICATION),
+    EdgeType.CO_AUTHOR_AUTHOR: (NodeType.CO_AUTHOR, EdgeType.CO_AUTHOR_AUTHOR, NodeType.AUTHOR),
+    EdgeType.CO_AUTHOR_ORG: (NodeType.CO_AUTHOR, EdgeType.CO_AUTHOR_ORG, NodeType.ORGANIZATION),
+
+    # Organization edges
+    EdgeType.ORG_PUB: (NodeType.ORGANIZATION, EdgeType.ORG_PUB, NodeType.PUBLICATION),
+    EdgeType.ORG_AUTHOR: (NodeType.ORGANIZATION, EdgeType.ORG_AUTHOR, NodeType.AUTHOR),
+    EdgeType.ORG_CO_AUTHOR: (NodeType.ORGANIZATION, EdgeType.ORG_CO_AUTHOR, NodeType.CO_AUTHOR),
+
+    # Venue edges
+    EdgeType.VENUE_PUB: (NodeType.VENUE, EdgeType.VENUE_PUB, NodeType.PUBLICATION),
+}
+
+edge_pyg_key_vals = {
+    key: (source.value, edge.value, target.value)
+    for key, (source, edge, target) in edge_pyg_key.items()
+}
+
+edge_val_to_pyg_key_vals = {
+    key.value: (source.value, edge.value, target.value)
+    for key, (source, edge, target) in edge_pyg_key.items()
+}
+
 edge_one_hot = {
     edge_type.value: F.one_hot(torch.tensor(i), num_classes=len(EdgeType)).type(torch.float32)
     for i, edge_type in enumerate(EdgeType)
