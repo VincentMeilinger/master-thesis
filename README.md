@@ -14,6 +14,12 @@ This repository contains the code and the data used for the experiments in the m
 - [x] Add edge from author org to publication
 - [ ] Add edge features to neo_to_pyg function
 
+
+## Links
+
+- [Similar Project](https://github.com/ebrahimpichka/GAT-pt/blob/main/models.py)
+- [GAT training explanation](https://medium.com/@TechInsight/how-to-train-a-graph-attention-network-for-node-classification-a85df318d457)
+
 ## Research Questions
 The research questions addressed in this thesis are:
 - How can Graph Learning methods be effectively used on the inherently heterogeneous public domain publication

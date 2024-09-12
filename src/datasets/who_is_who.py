@@ -11,6 +11,8 @@ from .dataset import Dataset
 from ..shared import config
 from ..shared.graph_schema import NodeType, EdgeType
 from ..shared.database_wrapper import DatabaseWrapper
+from src.shared.neo_to_pyg import GraphSampling
+
 
 logger = config.get_logger("Dataset")
 
@@ -163,5 +165,47 @@ class WhoIsWhoDataset(Dataset):
 
             if props:
                 db.merge_properties_batch(NodeType.PUBLICATION, props)
+
+        db.close()
+
+    @staticmethod
+    def sample_triplets(node_spec, edge_spec, node_properties, max_samples_per_author: int = 15):
+        db = DatabaseWrapper()
+        gs = GraphSampling(node_spec, edge_spec, node_properties)
+        data = WhoIsWhoDataset.parse_train()
+
+        def load_graph(pub_id):
+            graph = gs.n_hop_neighbourhood(
+                start_node_type=NodeType.PUBLICATION,
+                start_node_id=pub_id,
+                max_level=3
+            )
+            graph, graph_node_map = gs.neo_to_pyg(graph, node_attr="vec")
+            if graph is None:
+                return None
+
+            yield graph
+
+        for author_id, values in data.items():
+            normal_data = values['normal_data'][:max_samples_per_author]
+            outlier_data = values['outliers'][:(max_samples_per_author * 2)]
+
+            triplets = []
+            for i, anchor in enumerate(normal_data):
+                anchor_graph = load_graph(anchor)
+                if not anchor_graph:
+                    continue
+                for pos in normal_data[:i] + normal_data[i + 1:]:
+                    pos_graph = load_graph(pos)
+                    if not pos_graph:
+                        continue
+                    for neg in outlier_data:
+                        neg_graph = load_graph(neg)
+                        if not neg_graph:
+                            continue
+                        triplets.append((anchor_graph, pos_graph, neg_graph))
+
+                yield triplets
+                triplets.clear()
 
         db.close()
