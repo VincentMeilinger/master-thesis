@@ -13,6 +13,17 @@ class GraphSampling:
         self.edge_spec = edge_spec
         self.node_properties = node_properties
 
+    def random_nodes(self, node_type: NodeType, node_properties: list, n: int):
+        with self.driver.session() as session:
+            prop_str = ', '.join([f'n.{prop} as {prop}' for prop in node_properties])
+            query = f"""
+                MATCH (n:{node_type.value})
+                RETURN n.id as id, {prop_str}
+                LIMIT {n}
+            """
+            result = session.run(query)
+            data = result.data()
+            return data
 
     def n_hop_neighbourhood(
             self,
