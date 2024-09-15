@@ -10,15 +10,15 @@ logger = config.get_logger("DatabaseWrapper")
 
 
 class DatabaseWrapper:
-    def __init__(self):
+    def __init__(self, database: str = None):
         logger.info("Connecting to the database ...")
         logger.debug(f"URI: {config.DB_URI}")
         logger.debug(f"User: {config.DB_USER}")
-        self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD))
+        self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD), database=database)
 
         # Create Node Indexes
-        for node_type in NodeType:
-            self.create_index(f"index_{node_type.value}_id", node_type.value, "id")
+        #for node_type in NodeType:
+        #    self.create_index(f"index_{node_type.value}_id", node_type.value, "id")
 
         atexit.register(self.close)
         logger.info("Database ready.")
