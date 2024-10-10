@@ -14,8 +14,10 @@ class DatabaseWrapper:
         logger.info("Connecting to the database ...")
         logger.debug(f"URI: {config.DB_URI}")
         logger.debug(f"User: {config.DB_USER}")
-        self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD), database=database)
-
+        try:
+            self.driver = GraphDatabase.driver(config.DB_URI, auth=(config.DB_USER, config.DB_PASSWORD), database=database)
+        except Exception as e:
+            logger.error(f"Failed to connect to the database: {e}")
         # Create Node Indexes
         #for node_type in NodeType:
         #    self.create_index(f"index_{node_type.value}_id", node_type.value, "id")
@@ -52,6 +54,18 @@ class DatabaseWrapper:
         with self.driver.session() as session:
             query = "CREATE (n:$label $props) RETURN n"
             session.run(query, label=type.value, props=properties)
+
+    def create_nodes(self, node_type: NodeType, nodes: list):
+        with self.driver.session() as session:
+            query = f"""
+            UNWIND $nodes AS node
+            CREATE (n:{node_type.value} $properties)
+            RETURN n
+            """
+            result = session.run(query, nodes=[{"id": node["id"], "properties": node} for node in nodes])
+
+            if result.single() is None:
+                logger.error(f"Failed to create nodes of type {type}")
 
     def merge_node(self, type: NodeType, node_id: str, properties: dict = {}):
         with self.driver.session() as session:
@@ -97,6 +111,26 @@ class DatabaseWrapper:
             if result.single() is None:
                 logger.error(f"Failed to merge edges of type {edge_type.value}")
 
+    def merge_edges_with_properties(self, start_label: NodeType, end_label: NodeType, edge_type: EdgeType, edges: list):
+        with self.driver.session() as session:
+            query = f"""
+            UNWIND $edges AS edge
+            MATCH (a:{start_label.value} {{id: edge.start_id}})
+            MATCH (b:{end_label.value} {{id: edge.end_id}})
+            MERGE (a)-[r:{edge_type.value}]->(b)
+            ON CREATE SET r += edge.properties
+            ON MATCH SET r += edge.properties
+            RETURN r
+            """
+            result = session.run(query, edges=[{
+                "start_id": edge[0],
+                "end_id": edge[1],
+                "properties": edge[2]
+            } for edge in edges])
+
+            if result.single() is None:
+                logger.error(f"Failed to merge edges of type {edge_type.value}")
+
     def merge_edge(self, node_type_1: NodeType, node_id_1: str, node_type_2: NodeType, node_id_2: str, edge_type: EdgeType, properties: dict = {}):
         try:
             with self.driver.session() as session:
@@ -126,7 +160,8 @@ class DatabaseWrapper:
             result = session.run(query, id=node_id, properties=properties)
 
             if result.single() is None:
-                logger.error(f"Failed to find and update node {node_id}")
+                return
+                #logger.error(f"Failed to find and update node {node_id}")
 
     def merge_properties_batch(self, node_type: NodeType, nodes: List[Dict[str, Any]]):
         with self.driver.session() as session:
@@ -160,7 +195,10 @@ class DatabaseWrapper:
                 yield nodes
                 offset += batch_size
 
-    def iter_nodes(self, node_type: NodeType, attr_keys: List[str] = [], batch_size: int=config.DB_BATCH_SIZE):
+    def iter_nodes(self, node_type: NodeType, attr_keys=None, batch_size: int=config.DB_BATCH_SIZE):
+        if attr_keys is None:
+            attr_keys = []
+
         props = ", ".join([f"n.{key} AS {key}" for key in attr_keys])
         with self.driver.session() as session:
             offset = 0
@@ -174,6 +212,38 @@ class DatabaseWrapper:
                 query = f"""
                 MATCH (n:{node_type.value})
                 RETURN n
+                SKIP $offset LIMIT $batch_size
+                """
+            while True:
+                result = session.run(query, offset=offset, batch_size=batch_size).data()
+
+                if not result:
+                    break
+
+                yield result
+                offset += batch_size
+
+    def iter_nodes_with_edge_count(self, node_type: NodeType, count_edge_type: EdgeType, attr_keys=None, batch_size: int = config.DB_BATCH_SIZE):
+        if attr_keys is None:
+            attr_keys = []
+
+        # Prepare the properties to return
+        props = ", ".join([f"n.{key} AS {key}" for key in attr_keys])
+
+        with self.driver.session() as session:
+            offset = 0
+            if props:
+                query = f"""
+                MATCH (n:{node_type.value})
+                OPTIONAL MATCH (n)-[r:{count_edge_type.value}]-()
+                RETURN {props}, COUNT(r) AS edge_count
+                SKIP $offset LIMIT $batch_size
+                """
+            else:
+                query = f"""
+                MATCH (n:{node_type.value})
+                OPTIONAL MATCH (n)-[r:{count_edge_type.value}]-()
+                RETURN n, COUNT(r) AS edge_count
                 SKIP $offset LIMIT $batch_size
                 """
             while True:
@@ -292,6 +362,15 @@ class DatabaseWrapper:
             """
             session.run(query)
 
+    def delete_edges_for_empty_attr(self, node_type: NodeType, edge_type: EdgeType, attr: str):
+        with self.driver.session() as session:
+            query = f"""
+            MATCH (n:{node_type.value})-[r:{edge_type.value}]->()
+            WHERE n.{attr} = ''
+            DELETE r
+            """
+            session.run(query)
+
     def count_nodes(self, node_type):
         with self.driver.session() as session:
             query = f"""
@@ -300,6 +379,17 @@ class DatabaseWrapper:
             """
             result = session.run(query).single()
             return result["count"]
+
+    def count_edges(self, node_type, node_id, edge_type):
+        with self.driver.session() as session:
+            query = f"""
+            MATCH (n:{node_type.value})-[r:{edge_type.value}]-()
+            WHERE n.id = $id
+            RETURN count(r) as count
+            """
+            result = session.run(query, id=node_id)
+            count = result.single()["count"]
+            return count
 
     def close(self):
         logger.info("Closing the database connection")

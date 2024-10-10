@@ -7,11 +7,11 @@ import uuid
 from tqdm import tqdm
 from collections import defaultdict
 
-from .dataset import Dataset
-from ..shared import config
-from ..shared.graph_schema import NodeType, EdgeType
-from ..shared.database_wrapper import DatabaseWrapper
-from src.shared.neo_to_pyg import GraphSampling
+from src.datasets.dataset import Dataset
+from src.shared import config
+from src.shared.graph_schema import NodeType, EdgeType
+from src.shared.database_wrapper import DatabaseWrapper
+from src.shared.graph_sampling import GraphSampling
 
 
 logger = config.get_logger("Dataset")
@@ -209,3 +209,5 @@ class WhoIsWhoDataset(Dataset):
                 triplets.clear()
 
         db.close()
+
+

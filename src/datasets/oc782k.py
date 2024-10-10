@@ -1,7 +1,8 @@
+import json
 import os
 import pandas as pd
-from dataset import Dataset
-from ..shared import config
+from src.datasets.dataset import Dataset
+from src.shared import config
 
 logger = config.get_logger("OC782KDataset")
 
@@ -25,6 +26,25 @@ class OC782KDataset(Dataset):
         files = {'training.txt': 'train', 'testing.txt': 'test', 'validation.txt': 'valid'}
         for file in files.keys():
             data[files[file]] = pd.read_csv(file_path + file, sep='\t', header=None, names=['h', 'r', 't'])
+
+        return data
+
+    @staticmethod
+    def parse_train():
+        logger.info("Parsing train dataset OC-782K ...")
+        file_path = os.path.join(config.DATASET_DIR, 'OC-782K/training.txt')
+        return pd.read_csv(file_path + file_path, sep='\t', header=None, names=['h', 'r', 't'])
+
+    @staticmethod
+    def parse_valid():
+        logger.info("Parsing train dataset OC-782K ...")
+        file_path = os.path.join(config.DATASET_DIR, 'OC-782K/and_eval.json')
+
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File {file_path} not found.")
+
+        with open(file_path, 'r') as file:
+            data = json.load(file)
 
         return data
 
