@@ -73,13 +73,13 @@ class EdgeType(Enum):
 edge_start_end = {
     # Similar edges
     EdgeType.SIM_PUB: (NodeType.PUBLICATION, NodeType.PUBLICATION),
-    EdgeType.SIM_ORG: (NodeType.ORGANIZATION, NodeType.ORGANIZATION),
-    EdgeType.SIM_VENUE: (NodeType.VENUE, NodeType.VENUE),
+    EdgeType.SIM_ORG: (NodeType.PUBLICATION, NodeType.PUBLICATION),
+    EdgeType.SIM_VENUE: (NodeType.PUBLICATION, NodeType.PUBLICATION),
     EdgeType.SIM_TITLE: (NodeType.PUBLICATION, NodeType.PUBLICATION),
     EdgeType.SIM_ABSTRACT: (NodeType.PUBLICATION, NodeType.PUBLICATION),
     EdgeType.SIM_KEYWORDS: (NodeType.PUBLICATION, NodeType.PUBLICATION),
     EdgeType.SIM_YEAR: (NodeType.PUBLICATION, NodeType.PUBLICATION),
-    EdgeType.SIM_AUTHOR: (NodeType.AUTHOR, NodeType.AUTHOR),
+    EdgeType.SIM_AUTHOR: (NodeType.PUBLICATION, NodeType.PUBLICATION),
 
     # Publication edges
     EdgeType.PUB_VENUE: (NodeType.PUBLICATION, NodeType.VENUE),
@@ -111,13 +111,13 @@ edge_start_end = {
 edge_pyg_key = {
     # Similar edges
     EdgeType.SIM_PUB: (NodeType.PUBLICATION, EdgeType.SIM_PUB, NodeType.PUBLICATION),
-    EdgeType.SIM_ORG: (NodeType.ORGANIZATION, EdgeType.SIM_ORG, NodeType.ORGANIZATION),
-    EdgeType.SIM_VENUE: (NodeType.VENUE, EdgeType.SIM_VENUE, NodeType.VENUE),
+    EdgeType.SIM_ORG: (NodeType.PUBLICATION, EdgeType.SIM_ORG, NodeType.PUBLICATION),
+    EdgeType.SIM_VENUE: (NodeType.PUBLICATION, EdgeType.SIM_VENUE, NodeType.PUBLICATION),
     EdgeType.SIM_TITLE: (NodeType.PUBLICATION, EdgeType.SIM_TITLE, NodeType.PUBLICATION),
     EdgeType.SIM_ABSTRACT: (NodeType.PUBLICATION, EdgeType.SIM_ABSTRACT, NodeType.PUBLICATION),
     EdgeType.SIM_KEYWORDS: (NodeType.PUBLICATION, EdgeType.SIM_KEYWORDS, NodeType.PUBLICATION),
     EdgeType.SIM_YEAR: (NodeType.PUBLICATION, EdgeType.SIM_YEAR, NodeType.PUBLICATION),
-    EdgeType.SIM_AUTHOR: (NodeType.AUTHOR, EdgeType.SIM_AUTHOR, NodeType.AUTHOR),
+    EdgeType.SIM_AUTHOR: (NodeType.PUBLICATION, EdgeType.SIM_AUTHOR, NodeType.PUBLICATION),
 
     # Publication edges
     EdgeType.PUB_VENUE: (NodeType.PUBLICATION, EdgeType.PUB_VENUE, NodeType.VENUE),

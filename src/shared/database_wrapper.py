@@ -223,7 +223,7 @@ class DatabaseWrapper:
                 yield result
                 offset += batch_size
 
-    def iter_nodes_with_edge_count(self, node_type: NodeType, count_edge_type: EdgeType, attr_keys=None, batch_size: int = config.DB_BATCH_SIZE):
+    def iter_nodes_with_edge_count(self, node_type: NodeType, count_edge_types: [EdgeType], attr_keys=None, batch_size: int = config.DB_BATCH_SIZE):
         if attr_keys is None:
             attr_keys = []
 
@@ -235,19 +235,21 @@ class DatabaseWrapper:
             if props:
                 query = f"""
                 MATCH (n:{node_type.value})
-                OPTIONAL MATCH (n)-[r:{count_edge_type.value}]-()
+                OPTIONAL MATCH (n)-[r]-()
+                WHERE type(r) IN $edge_types
                 RETURN {props}, COUNT(r) AS edge_count
                 SKIP $offset LIMIT $batch_size
                 """
             else:
                 query = f"""
                 MATCH (n:{node_type.value})
-                OPTIONAL MATCH (n)-[r:{count_edge_type.value}]-()
+                OPTIONAL MATCH (n)-[r]-()
+                WHERE type(r) IN $edge_types
                 RETURN n, COUNT(r) AS edge_count
                 SKIP $offset LIMIT $batch_size
                 """
             while True:
-                result = session.run(query, offset=offset, batch_size=batch_size).data()
+                result = session.run(query, offset=offset, batch_size=batch_size, edge_types=[e.value for e in count_edge_types]).data()
 
                 if not result:
                     break
