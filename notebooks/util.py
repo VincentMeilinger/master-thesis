@@ -152,11 +152,14 @@ def plot_loss(losses, epoch_marker_pos=None, plot_title="Loss", window_size=20, 
     plt.ylabel('Loss')
 
     # Compute the moving average
-    if plot_avg:
-        if window_size > 1 and len(losses) >= window_size:
-            moving_avg = np.convolve(losses, np.ones(window_size) / window_size, mode='valid')
-            moving_avg_x = np.arange(window_size - 1, len(losses))
-            plt.plot(moving_avg_x, moving_avg, label=f'Moving Average (window={window_size})', color='orange')
+    if plot_avg and window_size > 1 and len(losses) >= window_size:
+        # Pad the losses array to align the moving average with the original data
+        pad_left = window_size // 2
+        pad_right = window_size // 2 - 1 if window_size % 2 == 0 else window_size // 2
+        losses_padded = np.pad(losses, (pad_left, pad_right), mode='edge')
+        moving_avg = np.convolve(losses_padded, np.ones(window_size) / window_size, mode='valid')
+        moving_avg_x = np.arange(0, len(losses))
+        plt.plot(moving_avg_x, moving_avg, label=f'Moving Average (window={window_size})', color='orange')
 
     for ix, x_pos in enumerate(epoch_marker_pos):
         plt.axvline(x=x_pos, color='red', linestyle='dotted', linewidth=1)

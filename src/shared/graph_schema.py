@@ -37,6 +37,9 @@ class EdgeType(Enum):
     SIM_YEAR = "SimilarYear"
     SIM_AUTHOR = "SimilarAuthor"
 
+    # Publication -[r:same_author]-> Publication
+    SAME_AUTHOR = "SameAuthor"
+
     # Publication -[r]-> n
     PUB_VENUE = "PubVenue"
     PUB_AUTHOR = "PubAuthor"
@@ -81,6 +84,9 @@ edge_start_end = {
     EdgeType.SIM_YEAR: (NodeType.PUBLICATION, NodeType.PUBLICATION),
     EdgeType.SIM_AUTHOR: (NodeType.PUBLICATION, NodeType.PUBLICATION),
 
+    # Same author
+    EdgeType.SAME_AUTHOR: (NodeType.PUBLICATION, NodeType.PUBLICATION),
+
     # Publication edges
     EdgeType.PUB_VENUE: (NodeType.PUBLICATION, NodeType.VENUE),
     EdgeType.PUB_AUTHOR: (NodeType.PUBLICATION, NodeType.AUTHOR),
@@ -118,6 +124,9 @@ edge_pyg_key = {
     EdgeType.SIM_KEYWORDS: (NodeType.PUBLICATION, EdgeType.SIM_KEYWORDS, NodeType.PUBLICATION),
     EdgeType.SIM_YEAR: (NodeType.PUBLICATION, EdgeType.SIM_YEAR, NodeType.PUBLICATION),
     EdgeType.SIM_AUTHOR: (NodeType.PUBLICATION, EdgeType.SIM_AUTHOR, NodeType.PUBLICATION),
+
+    # Same author
+    EdgeType.SAME_AUTHOR: (NodeType.PUBLICATION, EdgeType.SAME_AUTHOR, NodeType.PUBLICATION),
 
     # Publication edges
     EdgeType.PUB_VENUE: (NodeType.PUBLICATION, EdgeType.PUB_VENUE, NodeType.VENUE),
