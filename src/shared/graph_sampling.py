@@ -12,6 +12,7 @@ class GraphSampling:
         self.node_spec = node_spec
         self.edge_spec = edge_spec
         self.node_properties = node_properties
+        print(f"Using default edge type: {self.edge_spec[0].value} for homogeneous graph sampling.")
 
     def random_nodes(self, node_type: NodeType, node_properties: list, n: int):
         with self.driver.session() as session:
@@ -52,6 +53,87 @@ class GraphSampling:
                     }}) YIELD nodes, relationships
                     RETURN nodes, relationships
                 """
+            result = session.run(query)
+            data = result.single()
+            return data
+
+    def n_hop_neighbourhood_homogeneous(
+            self,
+            start_node_type: NodeType,
+            start_node_id: str,
+            edge_type: EdgeType,
+            max_level: int = 3
+    ):
+        with self.driver.session() as session:
+            query = f"""
+                    MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
+                    CALL apoc.path.subgraphAll(start, {{
+                      maxLevel: {max_level},
+                      relationshipFilter: '<{edge_type.value}',
+                      labelFilter: '+{NodeType.PUBLICATION.value}'
+                    }}) YIELD node
+                    WITH collect(node) AS nodes
+                    UNWIND nodes AS n
+                    UNWIND nodes AS m
+                    OPTIONAL MATCH (n)-[r:{edge_type.value}]-(m)
+                    RETURN nodes, collect(DISTINCT r) AS relationships
+                """
+            result = session.run(query)
+            data = result.single()
+            return data
+
+    def expand_config_homogeneous(
+            self,
+            start_node_type: NodeType,
+            start_node_id: str,
+            edge_type: EdgeType = None,
+            max_level: int = 3
+    ):
+        if edge_type is None:
+            edge_type = self.edge_spec[0]
+
+        with self.driver.session() as session:
+            query = f"""
+                MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
+                CALL apoc.path.expandConfig(start, {{
+                  maxLevel: {max_level},
+                  relationshipFilter: '<{edge_type.value}',
+                  labelFilter: '+{NodeType.PUBLICATION.value}'
+                }}) YIELD path
+                WITH collect(path) AS paths
+                WITH apoc.coll.toSet(apoc.coll.flatten([p IN paths | nodes(p)])) AS nodes,
+                     apoc.coll.toSet(apoc.coll.flatten([p IN paths | relationships(p)])) AS relationships
+                RETURN nodes, relationships
+            """
+            result = session.run(query)
+            data = result.single()
+            return data
+
+    def expand_config_heterogeneous(
+            self,
+            start_node_type: NodeType,
+            start_node_id: str,
+            edge_types: [EdgeType] = None,
+            max_level: int = 3
+    ):
+        edge_filter = '|'.join(
+            [f"<{et.value}" for et in self.edge_spec] if edge_types is None else
+            [f"<{et.value}" for et in edge_types]
+        )
+
+        with self.driver.session() as session:
+            query = f"""
+                MATCH (start:{start_node_type.value} {{id: '{start_node_id}'}})
+                CALL apoc.path.expandConfig(start, {{
+                  maxLevel: {max_level},
+                  relationshipFilter: '{edge_filter}',
+                  labelFilter: '+{NodeType.PUBLICATION.value}'
+                }}) YIELD path
+                WITH collect(path) AS paths
+                WITH apoc.coll.toSet(apoc.coll.flatten([p IN paths | nodes(p)])) AS nodes,
+                     apoc.coll.toSet(apoc.coll.flatten([p IN paths | relationships(p)])) AS relationships
+                RETURN nodes, relationships
+            """
             result = session.run(query)
             data = result.single()
             return data

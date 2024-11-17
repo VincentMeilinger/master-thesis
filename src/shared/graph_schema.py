@@ -14,6 +14,9 @@ class NodeType(Enum):
     VENUE = "Venue"
 
     def one_hot(self):
+        """
+        Get a one-hot encoding of the node type.
+        """
         return node_one_hot[self.value]
 
 
