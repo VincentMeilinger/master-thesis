@@ -127,12 +127,15 @@ class HomogeneousGraphTripletDataset(Dataset):
             # Convert to PyG Data objects
             data_a, node_map_a = neo_to_pyg_homogeneous(g_a, self.config['model_node_feature'])
             data_a.central_node_id = torch.tensor([node_map_a[anchor]])
+            data_a.publication_id = anchor
 
             data_p, node_map_p = neo_to_pyg_homogeneous(g_p, self.config['model_node_feature'])
             data_p.central_node_id = torch.tensor([node_map_p[pos]])
+            data_p.publication_id = pos
 
             data_n, node_map_n = neo_to_pyg_homogeneous(g_n, self.config['model_node_feature'])
             data_n.central_node_id = torch.tensor([node_map_n[neg]])
+            data_n.publication_id = neg
 
             # Return data and label
             return data_a, data_p, data_n
@@ -248,7 +251,7 @@ class TripletDataHarvester:
                 triplet = (anchor_paper_id, hardest_positive_paper_id, hardest_negative_paper_id)
                 triplets.append(triplet)
 
-        if len(triplets) < 1000:
+        if len(triplets) < 5000:
             print(f"Too few triplets generated: {len(triplets)}. Generating more triplets...")
             new_triplets = []
             for author_id, data in author_data.items():
@@ -265,6 +268,96 @@ class TripletDataHarvester:
 
                     triplet = (anchor_paper_id, pos_paper_id, neg_paper_id)
                     new_triplets.append(triplet)
+
+            triplets.extend(new_triplets)
+
+        print(f"Total triplets generated: {len(triplets)}. Done.")
+        self.triplets = triplets
+
+
+class TripletDataHarvesterRandomSampling:
+    def __init__(self, db: DatabaseWrapper, gs: GraphSampling, edge_spec: list, config: dict, valid_triplets_save_file: str = "valid_triplets", transformer_model='data/models/all-MiniLM-L6-v2-32dim'):
+        self.db = db
+        self.gs = gs
+        self.triplets = []
+        self.edge_spec = edge_spec
+        self.config = config
+        self.valid_triplets_save_file = valid_triplets_save_file
+        self.transformer_model = transformer_model
+
+        self.prepare_triplets()
+
+    def prepare_triplets(self):
+        print("Preparing triplets...")
+        file_path = f'./data/valid_triplets/{self.valid_triplets_save_file}.json'
+
+        try:
+            print("Loading triplets...")
+            self.load_triplets(file_path)
+            print(f"Loaded {len(self.triplets)} triplets.")
+        except FileNotFoundError:
+            print("Could not load triplets from file. Generating triplets...")
+            self.generate_triplets()
+            print(f"Generated {len(self.triplets)} triplets.")
+            print("Saving triplets...")
+            self.save_triplets(file_path)
+            print("Triplets saved.")
+
+    def load_triplets(self, file_path):
+        with open(file_path, 'r') as f:
+            self.triplets = json.load(f)
+
+    def save_triplets(self, file_path):
+        with open(file_path, 'w') as f:
+            json.dump(self.triplets, f)
+
+    def generate_triplets(self):
+        # Filter out the papers that are not present in the graph or have less than 2 edges
+        paper_ids = []
+        print("Checking data validity...")
+        total_num_papers = 0
+        invalid_papers = 0
+        for nodes in self.db.iter_nodes_with_edge_count(NodeType.PUBLICATION, self.edge_spec, ['id', 'true_author']):
+            for node in nodes:
+                total_num_papers += 1
+                data = self.gs.expand_config_homogeneous(NodeType.PUBLICATION, node['id'], max_level=1)
+                data = neo_to_pyg_homogeneous(data, self.config['model_node_feature'])[0]
+                if not homogeneous_graph_data_valid(data, edge_spec=self.edge_spec):
+                    invalid_papers += 1
+                    continue
+                paper_ids.append(node['id'])
+
+        print(f"Out of {total_num_papers} checked papers, {len(paper_ids)} are valid and {invalid_papers} are invalid.")
+        print("Generating hard triplets ...")
+        paper_set = set(paper_ids)
+
+        author_data = WhoIsWhoDataset.parse_train()
+        paper_data = WhoIsWhoDataset.parse_data()
+
+        for author_id, data in author_data.items():
+            for key in data:
+                data[key] = [p_id for p_id in data[key] if p_id in paper_set]
+
+        # Load sentence transformer model for embedding paper titles
+        model = SentenceTransformer(
+            self.transformer_model,
+            device='cuda'
+        )
+
+        # Generate triplets
+        triplets = []
+
+        for author_id, data in author_data.items():
+            normal_data = data.get('normal_data', [])
+            outliers = data.get('outliers', [])
+
+            if len(normal_data) < 2 or len(outliers) < 1:
+                continue
+
+            normal_titles = [paper_data[p_id]['title'] for p_id in normal_data]
+            outlier_titles = [paper_data[p_id]['title'] for p_id in outliers]
+
+
 
             triplets.extend(new_triplets)
 

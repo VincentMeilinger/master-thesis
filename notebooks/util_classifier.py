@@ -47,7 +47,7 @@ def neo_to_pyg_hetero_edges(
     relationships = data["relationships"]
 
     # Create a PyG Data object
-    pyg_data = CentralGraphData()
+    pyg_data = HeterogeneousCentralGraphData()
 
     node_features = []
     node_ids = []
@@ -118,7 +118,7 @@ def neo_to_pyg_homogeneous(
     #print(f"Nodes: {len(nodes)}, Relationships: {len(relationships)}")
 
     # Create a PyG Data object
-    pyg_data = CentralGraphData()
+    pyg_data = HomogeneousCentralGraphData()
 
     node_features = []
     node_ids = []
@@ -168,7 +168,21 @@ def neo_to_pyg_homogeneous(
     return pyg_data, node_id_map
 
 
-class CentralGraphData(Data):
+class HeterogeneousCentralGraphData(HeteroData):
+    def __cat_dim__(self, key, value, *args, **kwargs):
+        if key == 'central_node_id':
+            return 0  # Concat along batch dim
+        else:
+            return super().__cat_dim__(key, value, *args, **kwargs)
+
+    def __inc__(self, key: str, value: Any, *args, **kwargs) -> Any:
+        if key == 'central_node_id':
+            return self.num_nodes
+        else:
+            return super().__inc__(key, value, *args, **kwargs)
+
+
+class HomogeneousCentralGraphData(Data):
     def __cat_dim__(self, key, value, *args, **kwargs):
         if key == 'central_node_id':
             return 0  # Concat along batch dim
@@ -215,6 +229,11 @@ class MultiHomogeneousGraphTripletDataset(Dataset):
 
                 data_n, node_map_n = neo_to_pyg_homogeneous(g_n, self.config['model_node_feature'])
                 data_n.central_node_id = torch.tensor([node_map_n[neg]])
+
+                # Move data to device
+                data_a = data_a.to('cuda')
+                data_p = data_p.to('cuda')
+                data_n = data_n.to('cuda')
 
                 # Store data in dictionary
                 data_dict[edge_type] = (data_a, data_p, data_n)

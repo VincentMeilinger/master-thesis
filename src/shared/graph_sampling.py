@@ -71,12 +71,8 @@ class GraphSampling:
                       maxLevel: {max_level},
                       relationshipFilter: '<{edge_type.value}',
                       labelFilter: '+{NodeType.PUBLICATION.value}'
-                    }}) YIELD node
-                    WITH collect(node) AS nodes
-                    UNWIND nodes AS n
-                    UNWIND nodes AS m
-                    OPTIONAL MATCH (n)-[r:{edge_type.value}]-(m)
-                    RETURN nodes, collect(DISTINCT r) AS relationships
+                    }}) YIELD nodes, relationships
+                    RETURN nodes, relationships
                 """
             result = session.run(query)
             data = result.single()
