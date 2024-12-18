@@ -272,7 +272,7 @@ class HomoGATv2Encoder(torch.nn.Module):
 
         self.conv1 = GATv2Conv(
             (-1, -1),
-            hidden_channels // num_heads,  # Output dim per head
+            hidden_channels // num_heads,
             heads=num_heads,
             concat=True,
             dropout=dropout_p
@@ -305,6 +305,73 @@ class HomoGATv2Encoder(torch.nn.Module):
         x = self.dropout(x)
 
         x = self.fc(x)
+        x = F.normalize(x, p=2, dim=-1)  # Normalize embeddings for triplet loss
+
+        return x
+
+
+class HomoGATv2Encoder1Conv(torch.nn.Module):
+    def __init__(self, hidden_channels, out_channels, num_heads=8, dropout_p=0.3):
+        super().__init__()
+
+        self.conv1 = GATv2Conv(
+            (-1, -1),
+            hidden_channels // num_heads,
+            heads=num_heads,
+            concat=True,
+            dropout=dropout_p
+        )
+        self.bn1 = torch.nn.BatchNorm1d(hidden_channels)
+
+        self.fc = torch.nn.Linear(hidden_channels, out_channels)
+        self.dropout = torch.nn.Dropout(p=dropout_p)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = self.conv1(x, edge_index)
+        x = self.bn1(x)
+
+        x = F.elu(x)
+        x = self.dropout(x)
+
+        x = self.fc(x)
+        x = F.normalize(x, p=2, dim=-1)  # Normalize embeddings for triplet loss
+
+        return x
+
+class HomoGATv2Encoder1Conv2Linear(torch.nn.Module):
+    def __init__(self, hidden_channels, out_channels, num_heads=8, dropout_p=0.3):
+        super().__init__()
+
+        self.conv1 = GATv2Conv(
+            (-1, -1),
+            hidden_channels // num_heads,
+            heads=num_heads,
+            concat=True,
+            dropout=dropout_p
+        )
+        self.bn1 = torch.nn.BatchNorm1d(hidden_channels)
+
+        self.fc_1 = torch.nn.Linear(hidden_channels, hidden_channels)
+        self.fc_2 = torch.nn.Linear(hidden_channels, out_channels)
+
+        self.dropout = torch.nn.Dropout(p=dropout_p)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = self.conv1(x, edge_index)
+        x = self.bn1(x)
+
+        x = F.elu(x)
+        x = self.dropout(x)
+        x = self.fc_1(x)
+
+        x = F.elu(x)
+        x = self.dropout(x)
+        x = self.fc_2(x)
+
         x = F.normalize(x, p=2, dim=-1)  # Normalize embeddings for triplet loss
 
         return x

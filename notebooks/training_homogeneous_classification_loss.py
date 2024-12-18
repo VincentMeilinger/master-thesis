@@ -124,3 +124,9 @@ def test_and_eval(model, loss_fn, dataloader, margin):
     print(f"        Test/Eval Loss: {avg_loss:.4f}, Test/Eval Accuracy: {avg_num_correct:.4f}")
     print(f"        Triplet Loss: {avg_triplet_loss:.4f}, Cross Entropy Loss: {avg_cross_entropy_loss:.4f}")
     return avg_loss, avg_triplet_loss, avg_cross_entropy_loss, avg_num_correct, avg_correct_pos, avg_correct_neg
+
+def compute_metrics(true_pos, false_pos, false_neg):
+    precision = true_pos / (true_pos + false_pos) if (true_pos + false_pos) > 0 else 0.0
+    recall = true_pos / (true_pos + false_neg) if (true_pos + false_neg) > 0 else 0.0
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+    return precision, recall, f1

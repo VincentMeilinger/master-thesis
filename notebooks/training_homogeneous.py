@@ -199,7 +199,11 @@ def test_and_eval(model, loss_fn, dataloader, margin):
     # False positive: Negative pairs incorrectly predicted as positive (total_num_triplets - total_true_neg)
     # True negative: Correctly predicted negative pairs (total_true_neg)
     # False negative: Positive pairs incorrectly predicted as negative (total_num_triplets - total_true_pos)
-    precision, recall, f1 = compute_metrics(total_true_pos, total_num_triplets - total_true_neg, total_num_triplets - total_true_pos)
+    precision, recall, f1 = compute_metrics(
+        true_pos=total_true_pos,
+        false_pos=total_num_triplets - total_true_neg,
+        false_neg=total_num_triplets - total_true_pos
+    )
 
     # Compute average loss
     print(f"        Correct positive: {total_true_pos} ({avg_true_pos * 100:.2f}%), Correct negative: {total_true_neg} ({avg_true_neg * 100:.2f}%)")
