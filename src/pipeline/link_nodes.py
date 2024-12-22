@@ -1,7 +1,7 @@
 import numpy as np
+import random
 from tqdm import tqdm
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+from collections import defaultdict
 
 from src.shared import config
 from src.shared import run_config
@@ -12,58 +12,135 @@ from src.shared.graph_schema import NodeType, EdgeType
 logger = config.get_logger("LinkNodes")
 
 
-def string_similarity(s1, s2):
-    return len(set(s1) & set(s2)) / len(set(s1) | set(s2))
+def get_sample_size(num_papers):
+    random_k = 1 + random.random() * 0.2
+    return int(num_papers ** 0.5 * random_k)
 
 
-def transformer_string_similarity(model, strings: list):
-    embeddings = model.encode(strings)
-    similarity = cosine_similarity(embeddings)
-    return similarity
+def link_true_authors(db: DatabaseWrapper, train_data, config_file):
+    max_iterations = config_file.get("max_iterations", None)
+    node_type = NodeType.PUBLICATION
+    edges_to_merge = []
+    current_iteration = 0
+
+    with tqdm(total=max_iterations, desc="Merging true-author edges") as pbar:
+        for author_id, values in train_data.items():
+            papers = values.get('normal_data', [])
+            print(f"Number of papers: {len(papers)}")
+
+            pbar.update(len(papers) + len(values.get('outliers', [])))
+            if max_iterations is not None and current_iteration >= max_iterations:
+                break
+            current_iteration += 1
+
+            for i in range(len(papers)):
+                for j in range(len(papers)):
+                    if i == j:
+                        continue
+                    edges_to_merge.append([papers[i], papers[j]])
+
+            print(f"Number of edges to merge: {len(edges_to_merge)}")
+            # Randomly sample 10-40% of the edges_to_merge list
+            sample_size = get_sample_size(len(edges_to_merge))
+            print(f"Sample size: {sample_size}")
+            edges_to_merge = random.sample(edges_to_merge, sample_size)
+            print(f"Sampled number of edges to merge: {len(edges_to_merge)}")
+
+            if len(edges_to_merge) > 1000:
+                db.merge_edges(start_label=node_type, end_label=node_type, edge_type=EdgeType.SAME_AUTHOR,
+                               edges=edges_to_merge)
+                edges_to_merge.clear()
+
+        if edges_to_merge:
+            db.merge_edges(start_label=node_type, end_label=node_type, edge_type=EdgeType.SAME_AUTHOR,
+                           edges=edges_to_merge)
+            edges_to_merge.clear()
 
 
-def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: str,
-                          edge_type: EdgeType):
-    if run_state.completed('link_nodes', f'link_{node_type.value}_{edge_type.value}'):
-        logger.info(f"Linking {node_type.value} nodes already completed. Skipping ...")
-        return
-
+def link_co_author_network(db: DatabaseWrapper, data: dict, node_type: NodeType, config_file: dict):
+    co_author_overlap_threshold = config_file.get("co_author_overlap_threshold", 0.25)
     num_nodes = db.count_nodes(node_type)
-    logger.info(f"Linking {node_type.value} nodes based on {vec_attr} attribute ...")
-    with tqdm(total=num_nodes, desc=f"Progress {node_type.value} {vec_attr}") as pbar:
-        for nodes in db.iter_nodes(node_type, ['id', vec_attr]):
-            pbar.update(len(nodes))
+    attrs = ['id']
+    co_author_map = defaultdict(list)
+    co_author_overlap = defaultdict(int)
+
+    print(f"Linking {node_type.value} nodes based on co-authorship ...")
+    with tqdm(total=num_nodes, desc=f"Progress {node_type.value} co-authorship") as pbar:
+        for nodes in db.iter_nodes(node_type, attrs):
             for node in nodes:
-                # Skip nodes with zero vectors
-                if np.sum(node[vec_attr]) == 0:
+                co_authors = [author["name"] for author in data[node['id']]['authors']]
+                for author in co_authors:
+                    name = author.strip()
+                    name = re.sub(r'[^A-Za-z\s]', '', name)
+                    name_parts = name.split()
+                    if len(name_parts) == 0:
+                        continue
+
+                    surname = name_parts[-1]
+                    given_name_initial = (name_parts[0] if len(name_parts) > 1 else ' ')[0]
+                    abbrev = f"{surname} {given_name_initial}"
+                    co_author_map[abbrev].append(node['id'])
+                pbar.update(1)
+
+    for k, v in co_author_map.items():
+        for i in range(len(v)):
+            for j in range(i + 1, len(v)):
+                co_author_overlap[(v[i], v[j])] += 1
+
+    for k, v in co_author_overlap.items():
+        total_num_authors = data[k[0]]["authors"] + data[k[1]]["authors"]
+        co_author_overlap[k] = v / len(total_num_authors)
+
+    print(f"Max. co-authors: {max(len(v) for v in co_author_map.values())}")
+    print(f"Max. co-author overlap: {max(co_author_overlap.values())}")
+
+    print("Number of co-author pairs:", len(co_author_overlap))
+    print(f"Number of co-author pairs with overlap > {co_author_overlap_threshold}:",
+          len([v for v in co_author_overlap.values() if v > co_author_overlap_threshold]))
+
+    print("Merging edges ...")
+    edges_to_merge = [[k[0], k[1], {'sim': v}] for k, v in co_author_overlap.items() if v > co_author_overlap_threshold]
+    with tqdm(total=len(edges_to_merge), desc="Merging co-author edges") as pbar:
+        for i in range(0, len(edges_to_merge), 1000):
+            db.merge_edges_with_properties(start_label=node_type, end_label=node_type, edge_type=EdgeType.SIM_AUTHOR,
+                                           edges=edges_to_merge[i:i + 1000])
+            pbar.update(1000)
+
+
+def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: str, edge_type: EdgeType,
+                          threshold: float = 0.7, filter_empty_original_attr: str = None, k: int = 8):
+    num_nodes = db.count_nodes(node_type)
+    edges = []
+    attrs = ['id', vec_attr]
+    if filter_empty_original_attr:
+        attrs.append(filter_empty_original_attr)
+
+    print(f"Linking {node_type.value} nodes based on {vec_attr} attribute ...")
+    with tqdm(total=num_nodes, desc=f"Progress {node_type.value} {vec_attr}") as pbar:
+        for nodes in db.iter_nodes(node_type, attrs):
+            for node in nodes:
+                if filter_empty_original_attr and not node[filter_empty_original_attr]:
+                    pbar.update(1)
+                    print(f"Skipping node {node['id']} because {filter_empty_original_attr} is empty")
                     continue
 
-                k = int(run_config.get_config('link_nodes', 'k_nearest_limit'))
                 similar_nodes = db.get_similar_nodes_vec(
                     node_type,
                     vec_attr,
                     node[vec_attr],
-                    0.99,
+                    threshold,
                     k
                 )
                 for ix, row in similar_nodes.iterrows():
                     if row['id'] == node['id']:
                         continue
-                    db.merge_edge(node_type, node['id'], node_type, row['id'], edge_type, {"sim": row['sim']})
+                    edges.append([node['id'], row['id']])
+                    # db.merge_edge(node_type, node['id'], node_type, row['id'], edge_type, {"sim": row['sim']})
+                if len(edges) > 1000:
+                    print(f"Merging {len(edges)} edges ...")
+                    db.merge_edges(start_label=node_type, end_label=node_type, edge_type=edge_type, edges=edges)
+                    edges.clear()
 
-    run_state.set_state('link_nodes', f'link_{node_type.value}_{edge_type.value}', 'completed')
-
-
-def link_nodes():
-    """Create edges between nodes in the graph database based on author, venue, and keyword similarity.
-    """
-
-    db = DatabaseWrapper()
-
-    logger.info("Linking nodes based on attribute similarities ...")
-    link_node_attr_cosine(db, NodeType.ORGANIZATION, 'vec', EdgeType.SIM_ORG)
-    link_node_attr_cosine(db, NodeType.VENUE, 'vec', EdgeType.SIM_VENUE)
-    link_node_attr_cosine(db, NodeType.PUBLICATION, 'keywords_emb', EdgeType.SIM_KEYWORDS)
-
-    db.close()
-    logger.info("Done.")
+                pbar.update(1)
+    if edges:
+        db.merge_edges(start_label=node_type, end_label=node_type, edge_type=edge_type, edges=edges)
