@@ -2,11 +2,6 @@
 # Master Thesis on Author Disambiguation (AND) on public domain Knowledge Graphs
 This repository contains the code and the data used for the experiments in the master thesis on AND on public domain Knowledge Graphs.
 
-## Links
-
-- [Similar Project](https://github.com/ebrahimpichka/GAT-pt/blob/main/models.py)
-- [GAT training explanation](https://medium.com/@TechInsight/how-to-train-a-graph-attention-network-for-node-classification-a85df318d457)
-
 ## Research Questions
 The research questions addressed in this thesis are:
 
@@ -24,7 +19,6 @@ The research questions addressed in this thesis are:
 - [AMiner](https://www.aminer.cn/aminernetwork)
 - [DBLP](https://dblp.org/)
 - [CiteSeer](http://citeseer.ist.psu.edu/index)
-- [META4BUA](https://meta4bua.fokus.fraunhofer.de/datasets?locale=en)
 
 
 ## Graph Embedding
