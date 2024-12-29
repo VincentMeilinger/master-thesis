@@ -1,15 +1,11 @@
-import os
-import json
 from tqdm import tqdm
 from collections import defaultdict
-from sentence_transformers import SentenceTransformer
 
 from ..shared import config
-from ..datasets.who_is_who import WhoIsWhoDataset
 from ..shared.graph_schema import NodeType
 from ..shared.database_wrapper import DatabaseWrapper
 
-logger = config.get_logger('CreateKG')
+logger = config.get_logger('CreateNodes')
 
 
 def process_batch(db, model, batch):
@@ -39,6 +35,7 @@ def process_batch(db, model, batch):
 
 
 def create_nodes(db: DatabaseWrapper, model, data: dict, train_data: dict, config: dict):
+    logger.info("Merging publications into the graph ...")
     max_iterations = config.get('max_iterations', None)
 
     batch_nodes = defaultdict(list)
@@ -79,8 +76,9 @@ def create_nodes(db: DatabaseWrapper, model, data: dict, train_data: dict, confi
             pbar.update(1)
 
     process_batch(db, model, batch_nodes)
-    print("Number of authors in the graph:", len(authors_in_graph))
-    print("Number of publication nodes:", db.count_nodes(NodeType.PUBLICATION))
+    logger.info("Number of authors in the graph:", len(authors_in_graph))
+    logger.info("Number of publication nodes:", db.count_nodes(NodeType.PUBLICATION))
+    logger.info("Finished merging nodes.")
 
 
 def reverse_dict(author_dict):

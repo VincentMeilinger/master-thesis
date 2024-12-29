@@ -1,21 +1,20 @@
 import os
+import json
 import argparse
+from sentence_transformers import SentenceTransformer
 
+import pipeline_config
+from src.datasets.who_is_who import WhoIsWhoDataset
 from src.shared import (
     config,
-    run_state,
-    run_config,
     database_wrapper
 )
 from src.pipeline import (
-    embed_nodes,
     transformer_dim_reduction,
     create_nodes,
-    dataset_pre_processing,
-    train_gat,
-    link_nodes
+    link_nodes,
+    prediction
 )
-
 
 def main():
     parser = argparse.ArgumentParser(description="Train the AND model, populate the Neo4j database.")
@@ -37,98 +36,82 @@ def main():
         help='Set to True to create the models needed for the pipeline.'
     )
     parser.add_argument(
-        '--ds_stats', '-dss',
-        action='store_true',
-        help='Set to True to print dataset statistics.'
-    )
-    parser.add_argument(
-        '--embed_nodes', '-embed',
-        action='store_true',
-        help='Set to True to create publication node embeddings.'
-    )
-    parser.add_argument(
-        '--populate_neo', '-neo',
+        '--create_nodes', '-create',
         action='store_true',
         help='Set to True to populate the Neo4j database.'
     )
     parser.add_argument(
-        '--link_nodes', '-link',
+        '--prediction', '-pred',
         action='store_true',
-        help='Set to True to create the edges of the neo4j KG.'
+        help='Set to True to disambiguate author names.'
     )
-    parser.add_argument(
-        '--train', '-t',
-        action='store_true',
-        help='Set to True to train the AND model.'
-    )
-    parser.add_argument(
-        '--eval', '-e',
-        action='store_true',
-        help='Set to True to evaluate the AND model.'
-    )
-    parser.add_argument(
-        '--all', '-a',
-        action='store_true',
-        help='Set to True to run whole pipeline.'
-    )
+
 
     # Setup logging
     logger = config.get_logger("Main")
 
-    # Parse the arguments
+    # Parse arguments
     args = parser.parse_args()
 
     # Initial setup
     config.create_dirs()
     config.print_config()
 
-    # Access the build argument
-    if args.reset_state:
-        logger.info("Resetting the pipeline state.")
-        run_state.reset()
-
-    run_config.load(config.RUN_ID, config.RUN_DIR)
-    run_state.load(config.RUN_ID, config.RUN_DIR)
+    configuration = pipeline_config.config
 
     if args.delete_db:
         logger.info("Deleting the Neo4j database.")
-        db = database_wrapper.DatabaseWrapper()
+        db = database_wrapper.DatabaseWrapper(database=configuration["database"])
         db.delete_all_nodes()
-        run_state.reset()
-        run_state.load(config.RUN_ID, config.RUN_DIR)
-    if args.ds_stats:
-        logger.info("Calculating dataset statistics.")
-        raise NotImplementedError
+        db.close()
+
     if args.prepare_pipeline:
         logger.info("Preparing the pipeline.")
-        transformer_dim_reduction.prep_transformer()
+        transformer_dim_reduction.prep_transformer(configuration=configuration)
 
-    # Run the whole pipeline
-    if args.all:
-        logger.info("No arguments provided. Running all steps.")
-        dataset_pre_processing.dataset_pre_processing()
-        create_nodes.create_nodes()
-        embed_nodes.embed_nodes()
-        link_nodes.link_nodes()
-        train_gat.train_gat()
-        exit(0)
+    # Setup pipeline
+    db = database_wrapper.DatabaseWrapper(database=configuration["database"])
+    data = WhoIsWhoDataset.parse_data()
+    training_data = WhoIsWhoDataset.parse_train()
 
-    # Run individual steps
-    if args.populate_neo:
-        logger.info("Populating the Neo4j database.")
-        create_nodes.create_nodes()
-    if args.embed_nodes:
-        logger.info("Embedding publications.")
-        embed_nodes.embed_nodes()
-    if args.link_nodes:
-        logger.info("Creating the edges of the Neo4j KG.")
-        link_nodes.link_nodes()
-    if args.train:
-        logger.info("Training the AND model.")
-        train_gat.train_gat()
-    if args.eval:
-        logger.info("Evaluating the AND model.")
-        raise NotImplementedError
+    # Run pipelines
+    if args.create_nodes:
+        logger.info("Creating nodes.")
+
+        model = SentenceTransformer(
+            'sentence-transformers/all-MiniLM-L6-v2',
+            device='cuda'
+        )
+
+        # Create nodes for the graph
+        create_nodes.create_nodes(
+            db=db,
+            model=model,
+            data=data,
+            train_data=training_data,
+            config=configuration,
+        )
+
+        # Link nodes by attribute similarity
+        link_nodes.link_all_attributes(
+            db=db,
+            model=model,
+            config=configuration
+        )
+
+        # Link nodes based on co-author overlap
+        link_nodes.link_co_author_network(
+            db=db,
+            data=data,
+            config=configuration,
+        )
+
+    if args.prediction:
+        logger.info("Disambiguating authors.")
+        prediction.predict(
+            db=db,
+            config=configuration,
+        )
 
 
 if __name__ == '__main__':

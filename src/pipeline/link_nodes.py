@@ -1,13 +1,13 @@
-import numpy as np
+import re
 import random
+import numpy as np
 from tqdm import tqdm
 from collections import defaultdict
 
 from src.shared import config
-from src.shared import run_config
-from src.shared import run_state
 from src.shared.database_wrapper import DatabaseWrapper
 from src.shared.graph_schema import NodeType, EdgeType
+
 
 logger = config.get_logger("LinkNodes")
 
@@ -57,8 +57,10 @@ def link_true_authors(db: DatabaseWrapper, train_data, config_file):
             edges_to_merge.clear()
 
 
-def link_co_author_network(db: DatabaseWrapper, data: dict, node_type: NodeType, config_file: dict):
-    co_author_overlap_threshold = config_file.get("co_author_overlap_threshold", 0.25)
+def link_co_author_network(db: DatabaseWrapper, data: dict, config: dict):
+    node_type = NodeType.PUBLICATION
+
+    co_author_overlap_threshold = config["link_node"]["co_author_overlap_threshold"]
     num_nodes = db.count_nodes(node_type)
     attrs = ['id']
     co_author_map = defaultdict(list)
@@ -144,3 +146,59 @@ def link_node_attr_cosine(db: DatabaseWrapper, node_type: NodeType, vec_attr: st
                 pbar.update(1)
     if edges:
         db.merge_edges(start_label=node_type, end_label=node_type, edge_type=edge_type, edges=edges)
+
+def link_all_attributes(db: DatabaseWrapper, model, config: dict):
+    model_dim = model.get_sentence_embedding_dimension()
+
+    logger.info("Creating links based on attribute similarities ...")
+    db.create_vector_index('title_index', NodeType.PUBLICATION, 'title_emb', model_dim)
+    link_node_attr_cosine(
+        db,
+        NodeType.PUBLICATION,
+        'title_emb',
+        EdgeType.SIM_TITLE,
+        threshold=config["link_node"]["link_title_threshold"],
+        k=config["link_node"]["link_title_k"]
+    )
+
+    db.create_vector_index('abstract_index', NodeType.PUBLICATION, 'abstract_emb', model_dim)
+    link_node_attr_cosine(
+        db,
+        NodeType.PUBLICATION,
+        'abstract_emb',
+        EdgeType.SIM_ABSTRACT,
+        threshold=config["link_node"]["link_abstract_threshold"],
+        k=config["link_node"]["link_abstract_k"]
+    )
+
+    db.create_vector_index('venue_index', NodeType.PUBLICATION, 'venue_emb', model_dim)
+    link_node_attr_cosine(
+        db,
+        NodeType.PUBLICATION,
+        'venue_emb',
+        EdgeType.SIM_VENUE,
+        threshold=config["link_node"]["link_venue_threshold"],
+        k=config["link_node"]["link_venue_k"]
+    )
+
+    db.create_vector_index('org_index', NodeType.PUBLICATION, 'org_emb', model_dim)
+    link_node_attr_cosine(
+        db,
+        NodeType.PUBLICATION,
+        'org_emb',
+        EdgeType.SIM_ORG,
+        threshold=config["link_node"]["link_org_threshold"],
+        k=config["link_node"]["link_org_k"]
+    )
+
+    # Delete edges if the publication attribute is empty to avoid false links.
+    logger.info("Deleting links for empty attributes ...")
+    db.delete_edges_for_empty_attr(NodeType.PUBLICATION, EdgeType.SIM_TITLE, 'title')
+
+    db.delete_edges_for_empty_attr(NodeType.PUBLICATION, EdgeType.SIM_ABSTRACT, 'abstract')
+
+    db.delete_edges_for_empty_attr(NodeType.PUBLICATION, EdgeType.SIM_VENUE, 'venue')
+
+    db.delete_edges_for_empty_attr(NodeType.PUBLICATION, EdgeType.SIM_ORG, 'org')
+
+    logger.info("Finished linking nodes.")
